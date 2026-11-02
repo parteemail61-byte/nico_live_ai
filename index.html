@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nico LIVE AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d16;color:#fff;font-family:Arial,sans-serif}
+header{padding:20px;background:#111827;border-bottom:1px solid #263248}
+header h1{margin:0;font-size:23px}
+header p{color:#9caec5;margin:7px 0 0;font-size:13px}
+main{max-width:1050px;margin:auto;padding:18px;display:grid;gap:16px}
+.card{background:#131c2c;border:1px solid #29374d;border-radius:15px;padding:17px}
+h2{font-size:17px;margin:0 0 14px}
+.avatar{height:300px;background:linear-gradient(145deg,#202c40,#101725);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.avatar span{font-size:65px}
+.avatar p{color:#b8c6d9;margin:0}
+.status{color:#fbbf24;font-size:12px;margin-top:12px}
+input,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #35445c;background:#0c1422;color:white;margin:6px 0 12px}
+button{padding:12px 16px;border:0;border-radius:9px;background:#7c3aed;color:white;font-weight:bold;cursor:pointer}
+button.secondary{background:#26364d}
+.messages{height:180px;overflow:auto;background:#0c1422;padding:12px;border-radius:9px;color:#cbd5e1;font-size:13px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
+small{color:#93a4ba}
+</style>
+</head>
+<body>
+<header>
+<h1>🎙️ NICO LIVE AI</h1>
+<p>Painel de inteligência artificial para transmissões ao vivo</p>
+</header>
+<main>
+<section class="card">
+<h2>Personagem Nico</h2>
+<div class="avatar">
+<span>🎭</span>
+<strong>NICO</strong>
+<p>Seu personagem virtual está sendo preparado</p>
+</div>
+<div class="status" id="status">● Aguardando conexão com o servidor</div>
+</section>
+
+<section class="card">
+<h2>Personalidade do Nico</h2>
+<textarea id="personality" rows="3">Nico é um personagem carismático, divertido, humilde e carinhoso. Fala português brasileiro com naturalidade e trata os espectadores com atenção.</textarea>
+<small>Esta será a personalidade inicial do personagem.</small>
+</section>
+
+<section class="card">
+<h2>Mensagens da LIVE</h2>
+<div class="messages" id="messages">Aguardando integração com os comentários do TikTok...</div>
+</section>
+
+<section class="card">
+<h2>Teste de interação</h2>
+<input id="testMessage" placeholder="Digite uma mensagem para testar o Nico">
+<div class="actions">
+<button onclick="testNico()">Testar mensagem</button>
+<button class="secondary" onclick="clearMessages()">Limpar painel</button>
+</div>
+</section>
+</main>
+
+<script>
+function testNico(){
+ const field=document.getElementById('testMessage');
+ const box=document.getElementById('messages');
+ const value=field.value.trim();
+ if(!value)return;
+ const line=document.createElement('p');
+ line.textContent='Espectador: '+value;
+ box.appendChild(line);
+ const info=document.createElement('p');
+ info.textContent='Nico AI: integração de inteligência artificial ainda não configurada.';
+ box.appendChild(info);
+ box.scrollTop=box.scrollHeight;
+ field.value='';
+}
+function clearMessages(){
+ document.getElementById('messages').textContent='Painel limpo. Aguardando mensagens...';
+}
+</script>
+</body>
+</html>
