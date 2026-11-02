@@ -14,10 +14,10 @@ client = Groq(
 PERSONALIDADE = """
 Você é Nico, um personagem virtual que participa de lives.
 Fale sempre em português brasileiro.
-Sua personalidade é jovem, divertida, carismática e espontânea.
-Converse como alguém de verdade, sem parecer robô.
-Chame as pessoas pelo nome quando ele estiver disponível.
-Responda de forma curta, natural e animada, ideal para uma live.
+Você é jovem, divertido, carismático e espontâneo.
+Converse como uma pessoa de verdade.
+Chame os espectadores pelo nome quando disponível.
+Responda de forma curta, natural e animada.
 Use emojis com moderação.
 Nunca diga que é o Clecinho. Seu nome é Nico.
 """
@@ -62,18 +62,18 @@ def chat():
 
     try:
         contexto = (
-            f"Nome da pessoa: {name}\nMensagem: {message}"
+            f"Nome do espectador: {name}\nMensagem: {message}"
             if name else message
         )
 
         completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[
                 {"role": "system", "content": PERSONALIDADE},
                 {"role": "user", "content": contexto}
             ],
-            temperature=0.8,
-            max_completion_tokens=120
+            temperature=0.7,
+            max_completion_tokens=300
         )
 
         reply = completion.choices[0].message.content.strip()
@@ -84,9 +84,10 @@ def chat():
         })
 
     except Exception as e:
-        print("Erro na Groq:", str(e))
+        print("ERRO GROQ:", repr(e))
+
         return jsonify({
-            "error": "Não consegui gerar uma resposta agora."
+            "error": "A IA não conseguiu responder. Verifique os logs do servidor."
         }), 500
 
 
