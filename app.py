@@ -7,7 +7,9 @@ from groq import Groq
 app = Flask(__name__)
 CORS(app)
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY")
+)
 
 PERSONALIDADE = """
 Você é Nico, um personagem virtual que participa de lives.
@@ -24,6 +26,15 @@ Nunca diga que é o Clecinho. Seu nome é Nico.
 def home():
     return send_from_directory(app.root_path, "index.html")
 
+
+@app.route("/watermarked_img_9725052891330264212.jpg")
+def nico_image():
+    return send_from_directory(
+        app.root_path,
+        "watermarked_img_9725052891330264212.jpg"
+    )
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
@@ -31,6 +42,7 @@ def health():
         "project": "Nico LIVE AI",
         "ai_configured": bool(os.environ.get("GROQ_API_KEY"))
     })
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -76,6 +88,7 @@ def chat():
         return jsonify({
             "error": "Não consegui gerar uma resposta agora."
         }), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
