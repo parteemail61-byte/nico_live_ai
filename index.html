@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nico LIVE AI</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#090d16;color:#fff;font-family:Arial,sans-serif}
@@ -14,73 +15,161 @@ header p{color:#9caec5;margin:7px 0 0;font-size:13px}
 main{max-width:1050px;margin:auto;padding:18px;display:grid;gap:16px}
 .card{background:#131c2c;border:1px solid #29374d;border-radius:15px;padding:17px}
 h2{font-size:17px;margin:0 0 14px}
-.avatar{height:300px;background:linear-gradient(145deg,#202c40,#101725);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-.avatar span{font-size:65px}
-.avatar p{color:#b8c6d9;margin:0}
+.avatar{height:340px;background:#0c1422;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:contain}
 .status{color:#fbbf24;font-size:12px;margin-top:12px}
 input,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #35445c;background:#0c1422;color:white;margin:6px 0 12px}
 button{padding:12px 16px;border:0;border-radius:9px;background:#7c3aed;color:white;font-weight:bold;cursor:pointer}
 button.secondary{background:#26364d}
-.messages{height:180px;overflow:auto;background:#0c1422;padding:12px;border-radius:9px;color:#cbd5e1;font-size:13px}
+.messages{height:220px;overflow:auto;background:#0c1422;padding:12px;border-radius:9px;color:#cbd5e1;font-size:13px}
 .actions{display:flex;gap:9px;flex-wrap:wrap}
 small{color:#93a4ba}
+.message{padding:9px;margin:7px 0;border-radius:8px;background:#172338}
+.nico{border-left:3px solid #8b5cf6}
+.viewer{border-left:3px solid #38bdf8}
 </style>
 </head>
+
 <body>
 <header>
 <h1>🎙️ NICO LIVE AI</h1>
 <p>Painel de inteligência artificial para transmissões ao vivo</p>
 </header>
+
 <main>
 <section class="card">
 <h2>Personagem Nico</h2>
 <div class="avatar">
-<span>🎭</span>
-<strong>NICO</strong>
-<p>Seu personagem virtual está sendo preparado</p>
+<img src="/nico.png" alt="Personagem Nico"
+onerror="this.alt='Imagem nico.png não encontrada';this.style.display='none';">
 </div>
-<div class="status" id="status">● Aguardando conexão com o servidor</div>
+<div class="status" id="status">● Verificando conexão...</div>
 </section>
 
 <section class="card">
 <h2>Personalidade do Nico</h2>
 <textarea id="personality" rows="3">Nico é um personagem carismático, divertido, humilde e carinhoso. Fala português brasileiro com naturalidade e trata os espectadores com atenção.</textarea>
-<small>Esta será a personalidade inicial do personagem.</small>
+<small>Personalidade visual de referência. A configuração ativa da IA está no servidor.</small>
 </section>
 
 <section class="card">
 <h2>Mensagens da LIVE</h2>
-<div class="messages" id="messages">Aguardando integração com os comentários do TikTok...</div>
+<div class="messages" id="messages">
+Aguardando mensagens de teste...
+</div>
 </section>
 
 <section class="card">
 <h2>Teste de interação</h2>
+<input id="viewerName" placeholder="Nome do espectador (opcional)">
 <input id="testMessage" placeholder="Digite uma mensagem para testar o Nico">
 <div class="actions">
-<button onclick="testNico()">Testar mensagem</button>
+<button id="sendButton" onclick="testNico()">Enviar mensagem</button>
 <button class="secondary" onclick="clearMessages()">Limpar painel</button>
 </div>
 </section>
 </main>
 
 <script>
-function testNico(){
- const field=document.getElementById('testMessage');
- const box=document.getElementById('messages');
- const value=field.value.trim();
- if(!value)return;
- const line=document.createElement('p');
- line.textContent='Espectador: '+value;
- box.appendChild(line);
- const info=document.createElement('p');
- info.textContent='Nico AI: integração de inteligência artificial ainda não configurada.';
- box.appendChild(info);
- box.scrollTop=box.scrollHeight;
- field.value='';
+const messages = document.getElementById('messages');
+const statusBox = document.getElementById('status');
+const sendButton = document.getElementById('sendButton');
+
+function addMessage(text, type){
+ const line = document.createElement('div');
+ line.className = 'message ' + type;
+ line.textContent = text;
+ messages.appendChild(line);
+ messages.scrollTop = messages.scrollHeight;
 }
+
+async function checkServer(){
+ try{
+  const response = await fetch('/health');
+  const data = await response.json();
+
+  if(response.ok && data.status === 'ok'){
+   statusBox.textContent = '● Servidor conectado | IA ' +
+    (data.ai_configured ? 'configurada' : 'sem chave');
+   statusBox.style.color = data.ai_configured ? '#4ade80' : '#fbbf24';
+  }else{
+   throw new Error('Servidor indisponível');
+  }
+ }catch(error){
+  statusBox.textContent = '● Não foi possível conectar ao servidor';
+  statusBox.style.color = '#f87171';
+ }
+}
+
+function speak(text){
+ if(!('speechSynthesis' in window)) return;
+
+ window.speechSynthesis.cancel();
+
+ const speech = new SpeechSynthesisUtterance(text);
+ speech.lang = 'pt-BR';
+ speech.rate = 1;
+ speech.pitch = 1;
+
+ const voices = window.speechSynthesis.getVoices();
+ const brazilianVoice = voices.find(v => v.lang === 'pt-BR');
+
+ if(brazilianVoice) speech.voice = brazilianVoice;
+
+ window.speechSynthesis.speak(speech);
+}
+
+async function testNico(){
+ const field = document.getElementById('testMessage');
+ const nameField = document.getElementById('viewerName');
+
+ const value = field.value.trim();
+ const name = nameField.value.trim();
+
+ if(!value) return;
+
+ addMessage((name || 'Espectador') + ': ' + value, 'viewer');
+
+ field.value = '';
+ sendButton.disabled = true;
+ sendButton.textContent = 'Nico está pensando...';
+
+ try{
+  const response = await fetch('/chat',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    message:value,
+    name:name
+   })
+  });
+
+  const data = await response.json();
+
+  if(!response.ok){
+   throw new Error(data.error || 'Erro ao consultar a IA');
+  }
+
+  addMessage('Nico: ' + data.reply, 'nico');
+  speak(data.reply);
+
+ }catch(error){
+  addMessage('Sistema: ' + error.message, 'nico');
+ }finally{
+  sendButton.disabled = false;
+  sendButton.textContent = 'Enviar mensagem';
+ }
+}
+
 function clearMessages(){
- document.getElementById('messages').textContent='Painel limpo. Aguardando mensagens...';
+ messages.textContent = 'Painel limpo. Aguardando mensagens...';
 }
+
+document.getElementById('testMessage').addEventListener('keydown', e => {
+ if(e.key === 'Enter') testNico();
+});
+
+checkServer();
 </script>
 </body>
 </html>
