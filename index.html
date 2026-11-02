@@ -8,7 +8,7 @@
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090d16;color:#fff;font-family:Arial,sans-serif}
+body{margin:0;background:#090d16;color:white;font-family:Arial,sans-serif}
 header{padding:20px;background:#111827;border-bottom:1px solid #263248}
 header h1{margin:0;font-size:23px}
 header p{color:#9caec5;margin:7px 0 0;font-size:13px}
@@ -17,14 +17,13 @@ main{max-width:1050px;margin:auto;padding:18px;display:grid;gap:16px}
 h2{font-size:17px;margin:0 0 14px}
 .avatar{height:380px;background:#0c1422;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:contain;display:block}
-.status{color:#fbbf24;font-size:12px;margin-top:12px}
+.status{font-size:12px;margin-top:12px;color:#fbbf24}
 input,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #35445c;background:#0c1422;color:white;margin:6px 0 12px}
 button{padding:12px 16px;border:0;border-radius:9px;background:#7c3aed;color:white;font-weight:bold;cursor:pointer}
 button.secondary{background:#26364d}
 button:disabled{opacity:.5}
 .messages{height:220px;overflow:auto;background:#0c1422;padding:12px;border-radius:9px;color:#cbd5e1;font-size:13px}
 .actions{display:flex;gap:9px;flex-wrap:wrap}
-small{color:#93a4ba}
 .message{padding:9px;margin:7px 0;border-radius:8px;background:#172338}
 .nico{border-left:3px solid #8b5cf6}
 .viewer{border-left:3px solid #38bdf8}
@@ -42,21 +41,19 @@ small{color:#93a4ba}
 <h2>Personagem Nico</h2>
 
 <div class="avatar">
-<img
-src="watermarked_img_9725052891330264212.jpg"
-alt="Nico"
-onerror="document.getElementById('imageStatus').textContent='Imagem não encontrada. Confira o nome do arquivo no GitHub.'"
->
+<img id="nicoImage"
+src="/watermarked_img_9725052891330264212.jpg"
+alt="Personagem Nico">
 </div>
 
-<div class="status" id="imageStatus">● Carregando imagem do Nico...</div>
-<div class="status" id="status">● Verificando servidor...</div>
+<div class="status" id="imageStatus">Carregando imagem...</div>
+<div class="status" id="serverStatus">Verificando servidor...</div>
 </section>
 
 <section class="card">
 <h2>Personalidade do Nico</h2>
-<textarea id="personality" rows="3">Nico é carismático, divertido, humilde e carinhoso. Fala português brasileiro com naturalidade, conversa com os espectadores e responde de forma curta e espontânea.</textarea>
-<small>Personalidade do personagem.</small>
+<textarea id="personality" rows="3">Nico é carismático, divertido, humilde e carinhoso. Fala português brasileiro com naturalidade e trata os espectadores com atenção.</textarea>
+<small>Personalidade de referência do personagem.</small>
 </section>
 
 <section class="card">
@@ -80,36 +77,37 @@ Aguardando mensagens...
 
 <script>
 const messages = document.getElementById('messages');
-const statusBox = document.getElementById('status');
 const sendButton = document.getElementById('sendButton');
-
-const avatar = document.querySelector('.avatar img');
+const avatar = document.getElementById('nicoImage');
 
 avatar.onload = function(){
- document.getElementById('imageStatus').textContent = '● Imagem do Nico carregada!';
- document.getElementById('imageStatus').style.color = '#4ade80';
+ const box = document.getElementById('imageStatus');
+ box.textContent = '● Imagem do Nico carregada!';
+ box.style.color = '#4ade80';
 };
 
 avatar.onerror = function(){
- document.getElementById('imageStatus').textContent = '● Não encontrei a imagem. Confira o nome e a localização do arquivo.';
- document.getElementById('imageStatus').style.color = '#f87171';
+ const box = document.getElementById('imageStatus');
+ box.textContent = '● Não foi possível localizar a imagem. Confira se ela está na mesma pasta do index.html.';
+ box.style.color = '#f87171';
 };
 
 async function checkServer(){
+ const box = document.getElementById('serverStatus');
+
  try{
   const response = await fetch('/health');
   const data = await response.json();
 
-  if(response.ok && data.status === 'ok'){
-   statusBox.textContent = '● Servidor conectado | IA ' +
-    (data.ai_configured ? 'configurada' : 'sem chave');
-   statusBox.style.color = data.ai_configured ? '#4ade80' : '#fbbf24';
-  }else{
-   throw new Error();
-  }
+  if(!response.ok) throw new Error();
+
+  box.textContent = '● Servidor conectado | IA ' +
+   (data.ai_configured ? 'configurada' : 'sem chave');
+  box.style.color = data.ai_configured ? '#4ade80' : '#fbbf24';
+
  }catch(error){
-  statusBox.textContent = '● Erro na conexão com o servidor';
-  statusBox.style.color = '#f87171';
+  box.textContent = '● Erro na conexão com o servidor';
+  box.style.color = '#f87171';
  }
 }
 
@@ -141,10 +139,8 @@ function speak(text){
 
 async function testNico(){
  const field = document.getElementById('testMessage');
- const nameField = document.getElementById('viewerName');
-
+ const name = document.getElementById('viewerName').value.trim();
  const value = field.value.trim();
- const name = nameField.value.trim();
 
  if(!value) return;
 
