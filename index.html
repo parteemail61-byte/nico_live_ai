@@ -15,12 +15,13 @@ header p{color:#9caec5;margin:7px 0 0;font-size:13px}
 main{max-width:1050px;margin:auto;padding:18px;display:grid;gap:16px}
 .card{background:#131c2c;border:1px solid #29374d;border-radius:15px;padding:17px}
 h2{font-size:17px;margin:0 0 14px}
-.avatar{height:340px;background:#0c1422;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.avatar img{width:100%;height:100%;object-fit:contain}
+.avatar{height:380px;background:#0c1422;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:contain;display:block}
 .status{color:#fbbf24;font-size:12px;margin-top:12px}
 input,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #35445c;background:#0c1422;color:white;margin:6px 0 12px}
 button{padding:12px 16px;border:0;border-radius:9px;background:#7c3aed;color:white;font-weight:bold;cursor:pointer}
 button.secondary{background:#26364d}
+button:disabled{opacity:.5}
 .messages{height:220px;overflow:auto;background:#0c1422;padding:12px;border-radius:9px;color:#cbd5e1;font-size:13px}
 .actions{display:flex;gap:9px;flex-wrap:wrap}
 small{color:#93a4ba}
@@ -39,30 +40,37 @@ small{color:#93a4ba}
 <main>
 <section class="card">
 <h2>Personagem Nico</h2>
+
 <div class="avatar">
-<img src="/watermarked_img_9725052891330264212.jpg" alt="Personagem Nico"
-onerror="this.alt='Imagem nico.png não encontrada';this.style.display='none';">
+<img
+src="watermarked_img_9725052891330264212.jpg"
+alt="Nico"
+onerror="document.getElementById('imageStatus').textContent='Imagem não encontrada. Confira o nome do arquivo no GitHub.'"
+>
 </div>
-<div class="status" id="status">● Verificando conexão...</div>
+
+<div class="status" id="imageStatus">● Carregando imagem do Nico...</div>
+<div class="status" id="status">● Verificando servidor...</div>
 </section>
 
 <section class="card">
 <h2>Personalidade do Nico</h2>
-<textarea id="personality" rows="3">Nico é um personagem carismático, divertido, humilde e carinhoso. Fala português brasileiro com naturalidade e trata os espectadores com atenção.</textarea>
-<small>Personalidade visual de referência. A configuração ativa da IA está no servidor.</small>
+<textarea id="personality" rows="3">Nico é carismático, divertido, humilde e carinhoso. Fala português brasileiro com naturalidade, conversa com os espectadores e responde de forma curta e espontânea.</textarea>
+<small>Personalidade do personagem.</small>
 </section>
 
 <section class="card">
 <h2>Mensagens da LIVE</h2>
 <div class="messages" id="messages">
-Aguardando mensagens de teste...
+Aguardando mensagens...
 </div>
 </section>
 
 <section class="card">
 <h2>Teste de interação</h2>
-<input id="viewerName" placeholder="Nome do espectador (opcional)">
-<input id="testMessage" placeholder="Digite uma mensagem para testar o Nico">
+<input id="viewerName" placeholder="Nome do espectador">
+<input id="testMessage" placeholder="Digite uma mensagem para o Nico">
+
 <div class="actions">
 <button id="sendButton" onclick="testNico()">Enviar mensagem</button>
 <button class="secondary" onclick="clearMessages()">Limpar painel</button>
@@ -75,13 +83,17 @@ const messages = document.getElementById('messages');
 const statusBox = document.getElementById('status');
 const sendButton = document.getElementById('sendButton');
 
-function addMessage(text, type){
- const line = document.createElement('div');
- line.className = 'message ' + type;
- line.textContent = text;
- messages.appendChild(line);
- messages.scrollTop = messages.scrollHeight;
-}
+const avatar = document.querySelector('.avatar img');
+
+avatar.onload = function(){
+ document.getElementById('imageStatus').textContent = '● Imagem do Nico carregada!';
+ document.getElementById('imageStatus').style.color = '#4ade80';
+};
+
+avatar.onerror = function(){
+ document.getElementById('imageStatus').textContent = '● Não encontrei a imagem. Confira o nome e a localização do arquivo.';
+ document.getElementById('imageStatus').style.color = '#f87171';
+};
 
 async function checkServer(){
  try{
@@ -93,12 +105,20 @@ async function checkServer(){
     (data.ai_configured ? 'configurada' : 'sem chave');
    statusBox.style.color = data.ai_configured ? '#4ade80' : '#fbbf24';
   }else{
-   throw new Error('Servidor indisponível');
+   throw new Error();
   }
  }catch(error){
-  statusBox.textContent = '● Não foi possível conectar ao servidor';
+  statusBox.textContent = '● Erro na conexão com o servidor';
   statusBox.style.color = '#f87171';
  }
+}
+
+function addMessage(text,type){
+ const line = document.createElement('div');
+ line.className = 'message ' + type;
+ line.textContent = text;
+ messages.appendChild(line);
+ messages.scrollTop = messages.scrollHeight;
 }
 
 function speak(text){
@@ -112,9 +132,9 @@ function speak(text){
  speech.pitch = 1;
 
  const voices = window.speechSynthesis.getVoices();
- const brazilianVoice = voices.find(v => v.lang === 'pt-BR');
+ const voice = voices.find(v => v.lang.toLowerCase() === 'pt-br');
 
- if(brazilianVoice) speech.voice = brazilianVoice;
+ if(voice) speech.voice = voice;
 
  window.speechSynthesis.speak(speech);
 }
@@ -128,11 +148,11 @@ async function testNico(){
 
  if(!value) return;
 
- addMessage((name || 'Espectador') + ': ' + value, 'viewer');
+ addMessage((name || 'Espectador') + ': ' + value,'viewer');
 
  field.value = '';
  sendButton.disabled = true;
- sendButton.textContent = 'Nico está pensando...';
+ sendButton.textContent = 'Nico pensando...';
 
  try{
   const response = await fetch('/chat',{
@@ -147,14 +167,14 @@ async function testNico(){
   const data = await response.json();
 
   if(!response.ok){
-   throw new Error(data.error || 'Erro ao consultar a IA');
+   throw new Error(data.error || 'Erro na IA');
   }
 
-  addMessage('Nico: ' + data.reply, 'nico');
+  addMessage('Nico: ' + data.reply,'nico');
   speak(data.reply);
 
  }catch(error){
-  addMessage('Sistema: ' + error.message, 'nico');
+  addMessage('Sistema: ' + error.message,'nico');
  }finally{
   sendButton.disabled = false;
   sendButton.textContent = 'Enviar mensagem';
@@ -165,7 +185,7 @@ function clearMessages(){
  messages.textContent = 'Painel limpo. Aguardando mensagens...';
 }
 
-document.getElementById('testMessage').addEventListener('keydown', e => {
+document.getElementById('testMessage').addEventListener('keydown',function(e){
  if(e.key === 'Enter') testNico();
 });
 
