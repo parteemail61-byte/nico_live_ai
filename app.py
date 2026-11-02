@@ -1,6 +1,6 @@
 
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from groq import Groq
 
@@ -22,11 +22,7 @@ Nunca diga que é o Clecinho. Seu nome é Nico.
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({
-        "project": "Nico LIVE AI",
-        "status": "online",
-        "message": "Servidor do Nico está funcionando!"
-    })
+    return send_from_directory(app.root_path, "index.html")
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -53,19 +49,16 @@ def chat():
         return jsonify({"error": "Chave da IA não configurada"}), 500
 
     try:
-        contexto = f"Nome da pessoa: {name}\nMensagem: {message}" if name else message
+        contexto = (
+            f"Nome da pessoa: {name}\nMensagem: {message}"
+            if name else message
+        )
 
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {
-                    "role": "system",
-                    "content": PERSONALIDADE
-                },
-                {
-                    "role": "user",
-                    "content": contexto
-                }
+                {"role": "system", "content": PERSONALIDADE},
+                {"role": "user", "content": contexto}
             ],
             temperature=0.8,
             max_completion_tokens=120
@@ -86,4 +79,3 @@ def chat():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
-    
