@@ -48,6 +48,7 @@ alt="Personagem Nico">
 
 <div class="status" id="imageStatus">Carregando imagem...</div>
 <div class="status" id="serverStatus">Verificando servidor...</div>
+<div class="status" id="voiceStatus">Preparando voz...</div>
 </section>
 
 <section class="card">
@@ -71,6 +72,7 @@ Aguardando mensagens...
 <div class="actions">
 <button id="sendButton" onclick="testNico()">Enviar mensagem</button>
 <button class="secondary" onclick="clearMessages()">Limpar painel</button>
+<button class="secondary" onclick="testVoice()">Testar voz</button>
 </div>
 </section>
 </main>
@@ -78,6 +80,7 @@ Aguardando mensagens...
 <script>
 const messages = document.getElementById('messages');
 const sendButton = document.getElementById('sendButton');
+
 const avatar = document.getElementById('nicoImage');
 
 avatar.onload = function(){
@@ -88,7 +91,7 @@ avatar.onload = function(){
 
 avatar.onerror = function(){
  const box = document.getElementById('imageStatus');
- box.textContent = '● Não foi possível localizar a imagem. Confira se ela está na mesma pasta do index.html.';
+ box.textContent = '● Imagem não encontrada';
  box.style.color = '#f87171';
 };
 
@@ -106,7 +109,7 @@ async function checkServer(){
   box.style.color = data.ai_configured ? '#4ade80' : '#fbbf24';
 
  }catch(error){
-  box.textContent = '● Erro na conexão com o servidor';
+  box.textContent = '● Erro na conexão';
   box.style.color = '#f87171';
  }
 }
@@ -119,6 +122,33 @@ function addMessage(text,type){
  messages.scrollTop = messages.scrollHeight;
 }
 
+function getBrazilianVoice(){
+ const voices = window.speechSynthesis.getVoices();
+
+ const brazilian = voices.filter(v =>
+  v.lang.toLowerCase().startsWith('pt-br')
+ );
+
+ const male = brazilian.find(v =>
+  /male|mascul|daniel|antonio|antônio|felipe|ricardo|gustavo|bruno|lucas|jorge/i.test(v.name)
+ );
+
+ return male || brazilian[0] || null;
+}
+
+function updateVoiceStatus(){
+ const voice = getBrazilianVoice();
+ const box = document.getElementById('voiceStatus');
+
+ if(voice){
+  box.textContent = '● Voz disponível: ' + voice.name;
+  box.style.color = '#4ade80';
+ }else{
+  box.textContent = '● Aguardando voz em português brasileiro';
+  box.style.color = '#fbbf24';
+ }
+}
+
 function speak(text){
  if(!('speechSynthesis' in window)) return;
 
@@ -126,15 +156,22 @@ function speak(text){
 
  const speech = new SpeechSynthesisUtterance(text);
  speech.lang = 'pt-BR';
- speech.rate = 1;
- speech.pitch = 1;
+ speech.rate = 0.88;
+ speech.pitch = 0.78;
+ speech.volume = 1;
 
- const voices = window.speechSynthesis.getVoices();
- const voice = voices.find(v => v.lang.toLowerCase() === 'pt-br');
+ const voice = getBrazilianVoice();
 
- if(voice) speech.voice = voice;
+ if(voice){
+  speech.voice = voice;
+  speech.lang = voice.lang;
+ }
 
  window.speechSynthesis.speak(speech);
+}
+
+function testVoice(){
+ speak('Oi, pessoal! Eu sou o Nico. Que bom ter vocês aqui comigo. Como vocês estão hoje?');
 }
 
 async function testNico(){
@@ -184,6 +221,11 @@ function clearMessages(){
 document.getElementById('testMessage').addEventListener('keydown',function(e){
  if(e.key === 'Enter') testNico();
 });
+
+if('speechSynthesis' in window){
+ window.speechSynthesis.onvoiceschanged = updateVoiceStatus;
+ updateVoiceStatus();
+}
 
 checkServer();
 </script>
