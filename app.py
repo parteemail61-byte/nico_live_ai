@@ -11,7 +11,8 @@ CORS(app)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-VOICE_ID = "CstacWqMhJQlnfLPxRG4"
+# Voz Adam
+VOICE_ID = "U5UjeJMsOvyhYhXfZdvZ"
 
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
@@ -86,7 +87,9 @@ def speak():
             return jsonify({"error": "Texto vazio"}), 400
 
         if not ELEVENLABS_API_KEY:
-            return jsonify({"error": "Chave do ElevenLabs não configurada"}), 500
+            return jsonify({
+                "error": "Chave do ElevenLabs não configurada"
+            }), 500
 
         url = (
             f"https://api.elevenlabs.io/v1/text-to-speech/"
