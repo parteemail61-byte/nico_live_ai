@@ -1,302 +1,70 @@
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nico LIVE AI</title>
+import os
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+from groq import Groq
 
-<style>
-*{box-sizing:border-box}
-body{
-    margin:0;
-    padding:20px;
-    background:#090d16;
-    color:#fff;
-    font-family:Arial,sans-serif;
-}
-.container{max-width:650px;margin:auto}
-h1{text-align:center;color:#a78bfa}
-.card{
-    background:#131c2c;
-    border:1px solid #26334a;
-    border-radius:15px;
-    padding:18px;
-    margin-bottom:15px;
-}
-.avatar{
-    width:150px;
-    height:150px;
-    border-radius:50%;
-    object-fit:cover;
-    display:block;
-    margin:15px auto;
-    border:3px solid #8b5cf6;
-}
-.status{text-align:center;font-size:13px;color:#aaa}
-.status span{display:inline-block;margin:5px}
-h2{font-size:17px;color:#c4b5fd}
-input,textarea{
-    width:100%;
-    padding:13px;
-    border-radius:9px;
-    border:1px solid #34435c;
-    background:#080e19;
-    color:white;
-    margin:7px 0;
-    font-size:15px;
-}
-button{
-    border:0;
-    border-radius:9px;
-    padding:13px;
-    background:#7c3aed;
-    color:white;
-    font-weight:bold;
-    font-size:14px;
-    cursor:pointer;
-    margin-top:7px;
-}
-button:disabled{opacity:.5}
-.secondary{background:#334155}
-.messages{
-    height:280px;
-    overflow-y:auto;
-    background:#080e19;
-    padding:12px;
-    border-radius:9px;
-}
-.message{
-    padding:10px;
-    margin-bottom:9px;
-    border-radius:9px;
-    line-height:1.4;
-    overflow-wrap:anywhere;
-}
-.viewer{background:#243247}
-.nico{background:#35215b}
-.system{color:#fbbf24;font-size:13px;padding:5px}
-.buttons{display:flex;gap:8px;flex-wrap:wrap}
-.buttons button{flex:1}
-small{color:#94a3b8}
-</style>
-</head>
+app = Flask(__name__)
+CORS(app)
 
-<body>
-<div class="container">
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
-<h1>🎙️ NICO LIVE AI</h1>
+@app.route("/")
+def home():
+    return send_file("index.html")
 
-<div class="card">
-    <h2 style="text-align:center">Personagem Nico</h2>
+@app.route("/watermarked_img_9725052891330264212.jpg")
+def avatar():
+    return send_file("watermarked_img_9725052891330264212.jpg")
 
-    <img
-      id="avatar"
-      class="avatar"
-      src="/watermarked_img_9725052891330264212.jpg"
-      alt="Nico"
-    >
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "project": "Nico LIVE AI",
+        "ai_configured": bool(GROQ_API_KEY),
+        "voice": "Android - voz do celular",
+        "voice_configured": True
+    })
 
-    <div class="status">
-      <span id="serverStatus">🔄 Verificando servidor...</span>
-      <span id="voiceStatus">🔄 Verificando voz...</span>
-    </div>
-</div>
+@app.route("/chat", methods=["POST"])
+def chat():
+    try:
+        data = request.get_json(silent=True) or {}
+        message = data.get("message", "").strip()
+        if not message:
+            return jsonify({"error": "Mensagem vazia"}), 400
 
-<div class="card">
-    <h2>Personalidade</h2>
-    <textarea id="personality" rows="3">Jovem, divertido, carismático, espontâneo e simpático. Fale de maneira natural e curta.</textarea>
-    <small>Configuração visual da personalidade.</small>
-</div>
+        if not groq_client:
+            return jsonify({"error": "IA não configurada"}), 500
 
-<div class="card">
-    <h2>Mensagens da LIVE</h2>
+        result = groq_client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Seu nome é Nico. Você é um rapaz jovem, "
+                        "simpático, divertido e espontâneo. "
+                        "Conversa em português brasileiro natural. "
+                        "Responde de forma curta, como numa LIVE. "
+                        "Interage com as pessoas e chama cada uma pelo nome "
+                        "quando ele estiver disponível. "
+                        "Não diga que é um robô ou assistente virtual."
+                    )
+                },
+                {"role": "user", "content": message}
+            ],
+            temperature=0.8,
+            max_tokens=180
+        )
 
-    <div class="messages" id="messages">
-      <div class="system">Sistema: Nico está aguardando mensagens...</div>
-    </div>
+        reply = result.choices[0].message.content.strip()
+        return jsonify({"reply": reply})
 
-    <div style="margin-top:12px">
-      <input id="viewerName" placeholder="Nome do espectador">
-      <input id="viewerMessage" placeholder="Digite uma mensagem para o Nico">
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-      <div class="buttons">
-        <button id="sendButton" onclick="sendMessage()">Enviar mensagem</button>
-        <button class="secondary" onclick="clearMessages()">Limpar painel</button>
-      </div>
-    </div>
-</div>
-
-<div class="card">
-    <h2>Teste da voz masculina</h2>
-    <p style="color:#cbd5e1;font-size:14px">
-      Voz selecionada: Adam – Dominant
-    </p>
-
-    <button id="voiceButton" onclick="testVoice()" style="width:100%">
-      🔊 Testar voz do Nico
-    </button>
-
-    <p id="voiceMessage" class="status"></p>
-</div>
-
-<audio id="nicoAudio" preload="none"></audio>
-
-</div>
-
-<script>
-const messages = document.getElementById("messages");
-const audio = document.getElementById("nicoAudio");
-
-let currentAudioUrl = null;
-let busy = false;
-
-function addMessage(type, name, text) {
-    const div = document.createElement("div");
-    div.className = "message " + type;
-
-    const title = document.createElement("strong");
-    title.textContent = name + ": ";
-
-    const content = document.createElement("span");
-    content.textContent = text;
-
-    div.appendChild(title);
-    div.appendChild(content);
-
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-}
-
-function systemMessage(text) {
-    const div = document.createElement("div");
-    div.className = "system";
-    div.textContent = "Sistema: " + text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-}
-
-async function checkServer() {
-    try {
-        const response = await fetch("/health");
-        const data = await response.json();
-
-        document.getElementById("serverStatus").textContent =
-            data.status === "ok" ? "🟢 Servidor online" : "🔴 Servidor offline";
-
-        document.getElementById("voiceStatus").textContent =
-            data.voice_configured ? "🟢 Voz Adam configurada" : "🔴 Voz não configurada";
-
-    } catch (error) {
-        document.getElementById("serverStatus").textContent =
-            "🔴 Erro de conexão";
-    }
-}
-
-async function speak(text) {
-    const response = await fetch("/speak", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({text: text})
-    });
-
-    if (!response.ok) {
-        let message = "Erro ao gerar voz";
-        try {
-            const data = await response.json();
-            message = data.error || message;
-        } catch(e) {}
-        throw new Error(message);
-    }
-
-    const blob = await response.blob();
-
-    if (currentAudioUrl) {
-        URL.revokeObjectURL(currentAudioUrl);
-    }
-
-    currentAudioUrl = URL.createObjectURL(blob);
-    audio.src = currentAudioUrl;
-
-    await audio.play();
-}
-
-async function sendMessage() {
-    if (busy) return;
-
-    const name = document.getElementById("viewerName").value.trim();
-    const input = document.getElementById("viewerMessage");
-    const message = input.value.trim();
-
-    if (!message) {
-        alert("Digite uma mensagem primeiro!");
-        return;
-    }
-
-    busy = true;
-    document.getElementById("sendButton").disabled = true;
-
-    addMessage("viewer", name || "Espectador", message);
-    input.value = "";
-
-    try {
-        const response = await fetch("/chat", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                message: message,
-                name: name
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Erro na resposta da IA");
-        }
-
-        addMessage("nico", "Nico", data.reply);
-
-        await speak(data.reply);
-
-    } catch (error) {
-        systemMessage(error.message || "Não consegui responder agora.");
-    } finally {
-        busy = false;
-        document.getElementById("sendButton").disabled = false;
-    }
-}
-
-async function testVoice() {
-    const button = document.getElementById("voiceButton");
-    const status = document.getElementById("voiceMessage");
-
-    button.disabled = true;
-    status.textContent = "Gerando áudio da Adam...";
-
-    try {
-        await speak("Fala, galera! Aqui é o Nico! Que bom ter vocês comigo nessa live!");
-        status.textContent = "✅ Teste de voz concluído!";
-    } catch (error) {
-        status.textContent = "❌ " + error.message;
-    } finally {
-        button.disabled = false;
-    }
-}
-
-function clearMessages() {
-    messages.innerHTML = "";
-    systemMessage("Painel limpo. Nico continua online!");
-}
-
-document.getElementById("viewerMessage").addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        sendMessage();
-    }
-});
-
-checkServer();
-</script>
-
-</body>
-</html>
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
