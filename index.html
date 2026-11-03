@@ -7,150 +7,206 @@
 <title>Nico LIVE AI</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101018;color:#fff;font-family:Arial,sans-serif;padding:18px}
-.container{max-width:520px;margin:auto}
-header{text-align:center;margin-bottom:20px}
-h1{color:#a78bfa;margin-bottom:5px}
-.panel{background:#1c1c29;padding:18px;border-radius:16px;margin-bottom:15px}
-.avatar{width:125px;height:125px;object-fit:cover;border-radius:50%;display:block;margin:10px auto;border:3px solid #a78bfa}
-button{border:0;border-radius:10px;padding:13px;background:#8056e8;color:white;font-weight:bold;margin:4px;cursor:pointer}
-button.secondary{background:#383849}
-input{width:100%;padding:14px;border-radius:9px;border:1px solid #444;background:#101018;color:white;margin:7px 0}
-#messages{height:220px;overflow:auto;background:#101018;padding:12px;border-radius:10px;margin:12px 0}
-.msg{padding:8px;border-bottom:1px solid #333;line-height:1.4}
-.status{text-align:center;color:#aaa;font-size:13px}
+body{margin:0;background:#101018;color:white;font-family:Arial,sans-serif;padding:18px}
+.container{max-width:500px;margin:auto}
+h1{text-align:center;color:#a78bfa}
+.card{background:#1d1d2b;border-radius:16px;padding:18px;margin:15px 0}
+.avatar{width:130px;height:130px;object-fit:cover;border-radius:50%;display:block;margin:10px auto}
+h2{font-size:19px;margin-top:0}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#8056e8;color:white;font-size:15px;font-weight:bold;margin-top:9px}
+button.secondary{background:#39394b}
+button:disabled{opacity:.5}
+input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background:#303040;color:white;font-size:15px}
+#messages{height:180px;overflow-y:auto;background:#11111a;padding:10px;border-radius:10px;font-size:14px}
+.msg{padding:8px;border-bottom:1px solid #333}
+.status{font-size:14px;color:#c4b5fd;text-align:center}
+.small{font-size:12px;color:#aaa;text-align:center}
 </style>
 </head>
 <body>
 <div class="container">
-<header>
-<h1>🎙️ NICO LIVE AI</h1>
-<div class="status" id="status">Conectando...</div>
-</header>
 
-<div class="panel">
+<h1>🎙️ NICO LIVE AI</h1>
+
+<div class="card">
 <img class="avatar" src="/avatar" alt="Nico">
-<h3 style="text-align:center">🔊 Voz do Nico</h3>
-<p class="status">Voz masculina neural — Português Brasil</p>
-<button onclick="testVoice()">TESTAR VOZ</button>
+<h2 style="text-align:center">Seu parceiro de LIVE</h2>
+<p class="status">Voz masculina: Antonio Neural</p>
+<button onclick="testVoice()">🔊 TESTAR VOZ</button>
 <button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
-<div class="status" id="voiceStatus">Voz Antonio Neural</div>
 </div>
 
-<div class="panel">
-<h3>💬 Conversar com Nico</h3>
+<div class="card">
+<h2>📱 Conexão TikTok LIVE</h2>
+<p class="status" id="liveStatus">Desconectado</p>
+<button onclick="connectTikTok()" id="connectBtn">🔴 CONECTAR TIKTOK</button>
+<button class="secondary" onclick="checkStatus()">ATUALIZAR STATUS</button>
+<p class="small">Conta: @nicotriste53</p>
+</div>
+
+<div class="card">
+<h2>💬 Comentários da LIVE</h2>
+<div id="liveComments">Aguardando comentários...</div>
+</div>
+
+<div class="card">
+<h2>💬 Conversar com Nico</h2>
 <input id="username" placeholder="Nome da pessoa" value="visitante">
 <input id="message" placeholder="Digite uma mensagem">
 <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
-<button class="secondary" onclick="clearChat()">LIMPAR</button>
-<div id="messages">
-<div class="msg">Sistema: Aguardando mensagens...</div>
-</div>
-</div>
+<div id="messages"></div>
 </div>
 
-<audio id="nicoAudio" playsinline></audio>
+<audio id="audio" controls style="width:100%;margin-top:10px"></audio>
+
+</div>
 
 <script>
-const audio = document.getElementById("nicoAudio");
-let currentAudioUrl = null;
+const API = window.location.origin;
+let lastId = 0;
+let audioUrl = null;
+let polling = false;
 
-function addMessage(name,text){
- const box=document.getElementById("messages");
- const div=document.createElement("div");
- div.className="msg";
- div.textContent=name+": "+text;
- box.appendChild(div);
- box.scrollTop=box.scrollHeight;
+function addMessage(who, text) {
+    const box = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.textContent = who + ": " + text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
 }
 
-async function speak(text){
- try{
-  stopVoice();
-  document.getElementById("voiceStatus").textContent="Gerando voz masculina...";
-  const response=await fetch("/speak",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({text:text})
-  });
-  if(!response.ok){
-   const err=await response.json();
-   throw new Error(err.error||"Falha ao gerar áudio");
-  }
-  const blob=await response.blob();
-  currentAudioUrl=URL.createObjectURL(blob);
-  audio.src=currentAudioUrl;
-  audio.onended=()=>{
-   document.getElementById("voiceStatus").textContent="Voz pronta";
-   if(currentAudioUrl){
-    URL.revokeObjectURL(currentAudioUrl);
-    currentAudioUrl=null;
-   }
-  };
-  await audio.play();
-  document.getElementById("voiceStatus").textContent="Nico está falando...";
- }catch(error){
-  document.getElementById("voiceStatus").textContent="Erro: "+error.message;
-  addMessage("Sistema",error.message);
- }
+async function speak(text) {
+    try {
+        const response = await fetch(API + "/speak", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({text})
+        });
+
+        if (!response.ok) throw new Error("Falha ao gerar áudio");
+
+        const blob = await response.blob();
+
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        audioUrl = URL.createObjectURL(blob);
+
+        const audio = document.getElementById("audio");
+        audio.src = audioUrl;
+        await audio.play();
+    } catch(error) {
+        addMessage("Sistema", error.message);
+    }
 }
 
-function stopVoice(){
- audio.pause();
- audio.currentTime=0;
- if(currentAudioUrl){
-  URL.revokeObjectURL(currentAudioUrl);
-  currentAudioUrl=null;
- }
- document.getElementById("voiceStatus").textContent="Voz parada";
+async function testVoice() {
+    await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
 }
 
-function testVoice(){
- speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
+function stopVoice() {
+    const audio = document.getElementById("audio");
+    audio.pause();
+    audio.currentTime = 0;
 }
 
-async function sendMessage(){
- const message=document.getElementById("message").value.trim();
- const username=document.getElementById("username").value.trim()||"visitante";
- if(!message)return;
- document.getElementById("message").value="";
- addMessage(username,message);
- addMessage("Nico","Pensando...");
- try{
-  const response=await fetch("/chat",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({message,username})
-  });
-  const data=await response.json();
-  if(!response.ok)throw new Error(data.error||"Erro na conversa");
-  const box=document.getElementById("messages");
-  const last=box.lastElementChild;
-  if(last && last.textContent==="Nico: Pensando...")last.remove();
-  addMessage("Nico",data.reply);
-  await speak(data.reply);
- }catch(error){
-  addMessage("Sistema",error.message);
- }
+async function sendMessage() {
+    const username = document.getElementById("username").value.trim() || "visitante";
+    const message = document.getElementById("message").value.trim();
+
+    if (!message) return;
+
+    addMessage(username, message);
+    document.getElementById("message").value = "";
+
+    try {
+        const response = await fetch(API + "/chat", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({username, message})
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Erro na resposta");
+
+        addMessage("Nico", data.reply);
+        await speak(data.reply);
+    } catch(error) {
+        addMessage("Sistema", error.message);
+    }
 }
 
-function clearChat(){
- document.getElementById("messages").innerHTML="";
+async function connectTikTok() {
+    const button = document.getElementById("connectBtn");
+    button.disabled = true;
+    document.getElementById("liveStatus").textContent = "Tentando conectar...";
+
+    try {
+        const response = await fetch(API + "/tiktok/start", {
+            method: "POST"
+        });
+
+        const data = await response.json();
+        document.getElementById("liveStatus").textContent =
+            data.message || data.status;
+
+        setTimeout(checkStatus, 3000);
+        startPolling();
+    } catch(error) {
+        document.getElementById("liveStatus").textContent =
+            "Erro: " + error.message;
+        button.disabled = false;
+    }
 }
 
-document.getElementById("message").addEventListener("keydown",e=>{
- if(e.key==="Enter")sendMessage();
-});
+async function checkStatus() {
+    try {
+        const response = await fetch(API + "/tiktok/status");
+        const data = await response.json();
 
-fetch("/health")
-.then(r=>r.json())
-.then(data=>{
- document.getElementById("status").textContent=
- data.status==="ok"?"🟢 Sistema online":"Sistema indisponível";
-})
-.catch(()=>{
- document.getElementById("status").textContent="🔴 Erro de conexão";
-});
+        document.getElementById("liveStatus").textContent =
+            data.connected ? "🟢 Conectado à LIVE!" :
+            data.status === "erro" ? "🔴 Erro: " + data.error :
+            "🟡 " + data.status;
+
+        if (data.connected) {
+            document.getElementById("connectBtn").textContent = "CONECTADO";
+        }
+    } catch(error) {
+        document.getElementById("liveStatus").textContent =
+            "Não foi possível consultar o servidor";
+    }
+}
+
+async function getComments() {
+    try {
+        const response = await fetch(API + "/tiktok/events?since=" + lastId);
+        const data = await response.json();
+
+        for (const item of data.comments || []) {
+            lastId = Math.max(lastId, item.id);
+
+            const box = document.getElementById("liveComments");
+            const div = document.createElement("div");
+            div.className = "msg";
+            div.textContent = item.username + ": " + item.message;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+    } catch(error) {}
+}
+
+function startPolling() {
+    if (polling) return;
+    polling = true;
+
+    setInterval(async () => {
+        await checkStatus();
+        await getComments();
+    }, 3000);
+}
+
+checkStatus();
 </script>
 </body>
 </html>
