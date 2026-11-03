@@ -66,10 +66,17 @@ input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background
 </div>
 
 <div class="card">
-  <h2>🤖 Resposta automática</h2>
+  <h2>🤖 Respostas automáticas</h2>
   <p class="status" id="autoStatus">Respostas automáticas desligadas</p>
   <button onclick="enableAuto()" id="autoBtn">ATIVAR RESPOSTAS AUTOMÁTICAS</button>
   <p class="small">O Nico responderá aos comentários e presentes recebidos na LIVE.</p>
+</div>
+
+<div class="card">
+  <h2>🎭 Modo entretenimento</h2>
+  <p class="status" id="funStatus">Entretenimento desligado</p>
+  <button onclick="toggleEntertainment()" id="funBtn">ATIVAR MODO ENTRETENIMENTO</button>
+  <p class="small">Nico conversa sozinho, faz perguntas, conta histórias e brinca com o público quando o chat fica parado. Ative também as respostas automáticas.</p>
 </div>
 
 <div class="card">
@@ -84,12 +91,33 @@ input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background
   <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
   <div id="messages"></div>
 </div>
+
 <audio id="audio" controls style="width:100%;margin-top:10px"></audio>
 </div>
 
 <script>
 const API=window.location.origin;
-let lastId=0,audioUrl=null,polling=false,automatic=false,queue=[],processingQueue=false,seenIds=new Set();
+
+let lastId=0;
+let audioUrl=null;
+let polling=false;
+let automatic=false;
+let entertainment=false;
+let queue=[];
+let processingQueue=false;
+let entertainmentBusy=false;
+let seenIds=new Set();
+let entertainmentTimer=null;
+let entertainmentTopics=[
+"conte uma piada curta e divertida e termine com uma pergunta para o público",
+"conte uma mini-história engraçada que prenda a atenção e pergunte o que o público faria",
+"lance um desafio simples para quem está assistindo participar pelo chat",
+"faça uma pergunta curiosa e divertida que dê vontade de responder",
+"crie uma brincadeira rápida para movimentar a LIVE",
+"conte uma curiosidade interessante de um jeito descontraído e pergunte se alguém sabia"
+];
+let lastTopic=-1;
+
 const audio=document.getElementById("audio");
 const avatarWrap=document.getElementById("avatarWrap");
 const nicoStage=document.getElementById("nicoStage");
@@ -107,11 +135,12 @@ function playScene(talking){
   other.pause();
   avatarWrap.classList.toggle("speaking",talking);
 }
+
 audio.addEventListener("play",()=>playScene(true));
 audio.addEventListener("ended",()=>playScene(false));
 audio.addEventListener("pause",()=>playScene(false));
-idleVideo.addEventListener("error",()=>{defaultAvatar.classList.remove("hidden");});
-idleVideo.addEventListener("playing",()=>{defaultAvatar.classList.add("hidden");});
+idleVideo.addEventListener("error",()=>defaultAvatar.classList.remove("hidden"));
+idleVideo.addEventListener("playing",()=>defaultAvatar.classList.add("hidden"));
 talkVideo.addEventListener("error",()=>console.log("Vídeo de fala indisponível"));
 
 async function toggleFullscreen(){
@@ -123,112 +152,341 @@ async function toggleFullscreen(){
   }catch(error){nicoStage.classList.add("fake-fullscreen");}
   updateFullscreenButton();
 }
+
 function updateFullscreenButton(){
   const active=document.fullscreenElement===nicoStage||nicoStage.classList.contains("fake-fullscreen");
   fullscreenBtn.textContent=active?"✕ SAIR DA TELA CHEIA":"⛶ TELA CHEIA";
 }
+
 document.addEventListener("fullscreenchange",updateFullscreenButton);
 
 function addMessage(who,text){
-  const box=document.getElementById("messages"),div=document.createElement("div");
-  div.className="msg";div.textContent=who+": "+text;box.appendChild(div);box.scrollTop=box.scrollHeight;
+  const box=document.getElementById("messages");
+  const div=document.createElement("div");
+  div.className="msg";
+  div.textContent=who+": "+text;
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
 }
+
 function addLiveComment(who,message){
-  const box=document.getElementById("liveComments"),div=document.createElement("div");
-  div.className="msg";div.textContent=who+": "+message;box.appendChild(div);box.scrollTop=box.scrollHeight;
+  const box=document.getElementById("liveComments");
+  const div=document.createElement("div");
+  div.className="msg";
+  div.textContent=who+": "+message;
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
 }
+
 async function speak(text){
-  const response=await fetch(API+"/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+  const response=await fetch(API+"/speak",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({text})
+  });
+
   if(!response.ok)throw new Error("Erro ao gerar a voz do Nico.");
+
   const blob=await response.blob();
+
   if(audioUrl)URL.revokeObjectURL(audioUrl);
-  audioUrl=URL.createObjectURL(blob);audio.src=audioUrl;
+
+  audioUrl=URL.createObjectURL(blob);
+  audio.src=audioUrl;
   await audio.play();
+
   await new Promise((resolve,reject)=>{
     audio.onended=resolve;
     audio.onerror=()=>reject(new Error("Erro ao reproduzir áudio."));
   });
 }
+
 async function testVoice(){
-  try{await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");}
-  catch(error){addMessage("Sistema",error.message);}
+  try{
+    await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
+  }catch(error){
+    addMessage("Sistema",error.message);
+  }
 }
-function stopVoice(){audio.pause();audio.currentTime=0;playScene(false);}
+
+function stopVoice(){
+  audio.pause();
+  audio.currentTime=0;
+  playScene(false);
+}
+
 async function getAIReply(username,message){
-  const response=await fetch(API+"/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,message})});
+  const response=await fetch(API+"/chat",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username,message})
+  });
+
   const data=await response.json();
+
   if(!response.ok)throw new Error(data.error||"Erro na inteligência artificial.");
+
   return data.reply;
 }
+
 async function sendMessage(){
   const username=document.getElementById("username").value.trim()||"visitante";
   const message=document.getElementById("message").value.trim();
+
   if(!message)return;
-  addMessage(username,message);document.getElementById("message").value="";
-  try{const reply=await getAIReply(username,message);addMessage("Nico",reply);await speak(reply);}
-  catch(error){addMessage("Sistema",error.message);}
-}
-async function connectTikTok(){
-  const button=document.getElementById("connectBtn");button.disabled=true;
-  document.getElementById("liveStatus").textContent="Tentando conectar...";
+
+  addMessage(username,message);
+  document.getElementById("message").value="";
+
   try{
-    const response=await fetch(API+"/tiktok/start",{method:"POST"}),data=await response.json();
-    if(!response.ok)throw new Error(data.error||"Falha na conexão");
-    document.getElementById("liveStatus").textContent=data.message||data.status;
-    startPolling();setTimeout(checkStatus,2000);
-  }catch(error){document.getElementById("liveStatus").textContent=error.message;button.disabled=false;}
+    const reply=await getAIReply(username,message);
+    addMessage("Nico",reply);
+    await speak(reply);
+  }catch(error){
+    addMessage("Sistema",error.message);
+  }
 }
+
+async function connectTikTok(){
+  const button=document.getElementById("connectBtn");
+  button.disabled=true;
+  document.getElementById("liveStatus").textContent="Tentando conectar...";
+
+  try{
+    const response=await fetch(API+"/tiktok/start",{method:"POST"});
+    const data=await response.json();
+
+    if(!response.ok)throw new Error(data.error||"Falha na conexão");
+
+    document.getElementById("liveStatus").textContent=data.message||data.status;
+    startPolling();
+    setTimeout(checkStatus,2000);
+  }catch(error){
+    document.getElementById("liveStatus").textContent=error.message;
+    button.disabled=false;
+  }
+}
+
 async function checkStatus(){
   try{
-    const response=await fetch(API+"/tiktok/status"),data=await response.json();
-    document.getElementById("liveStatus").textContent=data.connected?"🟢 Conectado à LIVE!":data.status==="erro"?"🔴 Erro: "+data.error:"🟡 "+data.status;
-    if(data.connected){document.getElementById("connectBtn").textContent="CONECTADO";document.getElementById("connectBtn").disabled=true;}
-    else document.getElementById("connectBtn").disabled=false;
-  }catch(error){document.getElementById("liveStatus").textContent="Não foi possível consultar o servidor";}
+    const response=await fetch(API+"/tiktok/status");
+    const data=await response.json();
+
+    document.getElementById("liveStatus").textContent=
+      data.connected?"🟢 Conectado à LIVE!":
+      data.status==="erro"?"🔴 Erro: "+data.error:
+      "🟡 "+data.status;
+
+    if(data.connected){
+      document.getElementById("connectBtn").textContent="CONECTADO";
+      document.getElementById("connectBtn").disabled=true;
+    }else{
+      document.getElementById("connectBtn").disabled=false;
+    }
+  }catch(error){
+    document.getElementById("liveStatus").textContent="Não foi possível consultar o servidor";
+  }
 }
+
 async function getComments(){
   try{
-    const response=await fetch(API+"/tiktok/events?since="+lastId),data=await response.json();
+    const response=await fetch(API+"/tiktok/events?since="+lastId);
+    const data=await response.json();
+
     for(const item of data.comments||[]){
       lastId=Math.max(lastId,item.id);
+
       if(seenIds.has(item.id))continue;
+
       seenIds.add(item.id);
+
       const message=item.message||"";
       addLiveComment(item.username,message);
-      if(automatic&&message.trim()){queue.push(item);processQueue();}
+
+      if(automatic&&message.trim()){
+        queue.push(item);
+        processQueue();
+      }
     }
-  }catch(error){console.log("Erro ao buscar eventos:",error);}
+  }catch(error){
+    console.log("Erro ao buscar eventos:",error);
+  }
 }
+
 async function processQueue(){
   if(processingQueue||!automatic||queue.length===0)return;
+
   processingQueue=true;
+
   try{
     while(queue.length>0&&automatic){
       const item=queue.shift();
-      document.getElementById("autoStatus").textContent="🤖 Nico está respondendo "+item.username;
+
+      document.getElementById("autoStatus").textContent=
+        "🤖 Nico está respondendo "+item.username;
+
       try{
+        if(entertainmentBusy){
+          queue.unshift(item);
+          break;
+        }
+
         const reply=await getAIReply(item.username,item.message);
-        addMessage("Nico",reply);await speak(reply);
+
+        if(!automatic)break;
+
+        addMessage("Nico",reply);
+        await speak(reply);
+
         await new Promise(resolve=>setTimeout(resolve,700));
-      }catch(error){addMessage("Sistema",error.message);document.getElementById("autoStatus").textContent="Erro ao responder. Verifique o painel.";}
+      }catch(error){
+        addMessage("Sistema",error.message);
+        document.getElementById("autoStatus").textContent=
+          "Erro ao responder. Verifique o painel.";
+      }
     }
   }finally{
     processingQueue=false;
-    document.getElementById("autoStatus").textContent=automatic?"🟢 Respostas automáticas ligadas":"Respostas automáticas desligadas";
-    if(automatic&&queue.length>0)processQueue();
+
+    document.getElementById("autoStatus").textContent=
+      automatic?"🟢 Respostas automáticas ligadas":"Respostas automáticas desligadas";
+
+    if(automatic&&queue.length>0&&!entertainmentBusy)processQueue();
   }
 }
+
 function enableAuto(){
   automatic=!automatic;
-  document.getElementById("autoBtn").textContent=automatic?"DESATIVAR RESPOSTAS AUTOMÁTICAS":"ATIVAR RESPOSTAS AUTOMÁTICAS";
-  document.getElementById("autoStatus").textContent=automatic?"🟢 Respostas automáticas ligadas":"Respostas automáticas desligadas";
-  if(automatic)processQueue();else queue=[];
+
+  document.getElementById("autoBtn").textContent=
+    automatic?"DESATIVAR RESPOSTAS AUTOMÁTICAS":"ATIVAR RESPOSTAS AUTOMÁTICAS";
+
+  document.getElementById("autoStatus").textContent=
+    automatic?"🟢 Respostas automáticas ligadas":"Respostas automáticas desligadas";
+
+  if(automatic){
+    startPolling();
+    startEntertainmentTimer();
+    processQueue();
+  }else{
+    queue=[];
+    stopEntertainmentTimer();
+  }
 }
+
+function toggleEntertainment(){
+  entertainment=!entertainment;
+
+  document.getElementById("funBtn").textContent=
+    entertainment?"DESATIVAR MODO ENTRETENIMENTO":"ATIVAR MODO ENTRETENIMENTO";
+
+  if(entertainment){
+    if(!automatic){
+      document.getElementById("funStatus").textContent=
+        "⚠️ Ative primeiro as respostas automáticas.";
+      entertainment=false;
+      document.getElementById("funBtn").textContent="ATIVAR MODO ENTRETENIMENTO";
+      return;
+    }
+
+    document.getElementById("funStatus").textContent=
+      "🟢 Entretenimento ligado! Nico vai interagir com o público.";
+    startEntertainmentTimer();
+  }else{
+    document.getElementById("funStatus").textContent="Entretenimento desligado";
+    stopEntertainmentTimer();
+  }
+}
+
+function startEntertainmentTimer(){
+  if(entertainmentTimer)return;
+
+  entertainmentTimer=setInterval(runEntertainment,35000);
+}
+
+function stopEntertainmentTimer(){
+  if(entertainmentTimer){
+    clearInterval(entertainmentTimer);
+    entertainmentTimer=null;
+  }
+}
+
+function chooseEntertainmentTopic(){
+  if(entertainmentTopics.length===1)return entertainmentTopics[0];
+
+  let index=Math.floor(Math.random()*entertainmentTopics.length);
+
+  while(index===lastTopic){
+    index=Math.floor(Math.random()*entertainmentTopics.length);
+  }
+
+  lastTopic=index;
+  return entertainmentTopics[index];
+}
+
+async function runEntertainment(){
+  if(!automatic||!entertainment)return;
+  if(processingQueue||entertainmentBusy||queue.length>0)return;
+  if(!audio.paused)return;
+
+  entertainmentBusy=true;
+
+  document.getElementById("funStatus").textContent=
+    "🎭 Nico está preparando uma brincadeira...";
+
+  try{
+    const topic=chooseEntertainmentTopic();
+
+    const prompt=
+      "Você está apresentando uma LIVE brasileira. "+
+      "Crie uma fala espontânea para entreter quem está assistindo. "+
+      "Agora faça isto: "+topic+". "+
+      "Use português brasileiro natural, com personalidade e bom humor. "+
+      "Fale como um apresentador próximo do público. "+
+      "Use no máximo duas ou três frases curtas. "+
+      "Não diga que ninguém está comentando. "+
+      "Não peça presentes ou dinheiro. "+
+      "Não repita cumprimentos genéricos. "+
+      "Responda somente com a fala que será dita em voz alta.";
+
+    const reply=await getAIReply("público da live",prompt);
+
+    if(!automatic||!entertainment||queue.length>0)return;
+
+    addMessage("Nico 🎭",reply);
+    document.getElementById("funStatus").textContent=
+      "🟢 Nico está interagindo com o público";
+
+    await speak(reply);
+
+  }catch(error){
+    addMessage("Sistema",error.message);
+    document.getElementById("funStatus").textContent=
+      "Erro no entretenimento. Tentaremos novamente.";
+  }finally{
+    entertainmentBusy=false;
+
+    if(queue.length>0&&automatic)processQueue();
+
+    if(entertainment&&automatic){
+      document.getElementById("funStatus").textContent=
+        "🟢 Modo entretenimento ligado";
+    }
+  }
+}
+
 function startPolling(){
   if(polling)return;
-  polling=true;getComments();
-  setInterval(async()=>{await checkStatus();await getComments();},3000);
+
+  polling=true;
+  getComments();
+
+  setInterval(async()=>{
+    await checkStatus();
+    await getComments();
+  },3000);
 }
+
 checkStatus();
 </script>
 </body>
