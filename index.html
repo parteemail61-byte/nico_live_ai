@@ -5,63 +5,187 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nico LIVE AI</title>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101018;color:white;font-family:Arial,sans-serif;padding:18px}
+
+body{
+    margin:0;
+    background:#101018;
+    color:white;
+    font-family:Arial,sans-serif;
+    padding:18px;
+}
+
 .container{max-width:500px;margin:auto}
+
 h1{text-align:center;color:#a78bfa}
-.card{background:#1d1d2b;border-radius:16px;padding:18px;margin:15px 0}
-.avatar{width:130px;height:130px;object-fit:cover;border-radius:50%;display:block;margin:10px auto}
+
+.card{
+    background:#1d1d2b;
+    border-radius:16px;
+    padding:18px;
+    margin:15px 0;
+}
+
+.avatar-wrap{
+    width:160px;
+    height:160px;
+    margin:15px auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:#29213e;
+    transition:box-shadow .3s;
+}
+
+.avatar{
+    width:145px;
+    height:145px;
+    object-fit:cover;
+    border-radius:50%;
+    display:block;
+    transition:transform .25s ease;
+}
+
+.avatar-wrap.speaking{
+    animation:glow 1s infinite alternate;
+}
+
+.avatar-wrap.speaking .avatar{
+    animation:talk 0.7s infinite ease-in-out;
+}
+
+@keyframes talk{
+    0%{transform:translateY(0) scale(1)}
+    50%{transform:translateY(-4px) scale(1.025)}
+    100%{transform:translateY(0) scale(1)}
+}
+
+@keyframes glow{
+    from{box-shadow:0 0 8px #8056e8}
+    to{box-shadow:0 0 28px #a78bfa}
+}
+
 h2{font-size:19px;margin-top:0}
-button{width:100%;padding:14px;border:0;border-radius:10px;background:#8056e8;color:white;font-size:15px;font-weight:bold;margin-top:9px}
+
+button{
+    width:100%;
+    padding:14px;
+    border:0;
+    border-radius:10px;
+    background:#8056e8;
+    color:white;
+    font-size:15px;
+    font-weight:bold;
+    margin-top:9px;
+}
+
 button.secondary{background:#39394b}
 button:disabled{opacity:.5}
-input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background:#303040;color:white;font-size:15px}
-#messages,#liveComments{height:180px;overflow-y:auto;background:#11111a;padding:10px;border-radius:10px;font-size:14px}
-.msg{padding:8px;border-bottom:1px solid #333;overflow-wrap:anywhere}
-.status{font-size:14px;color:#c4b5fd;text-align:center}
-.small{font-size:12px;color:#aaa;text-align:center}
+
+input{
+    width:100%;
+    padding:13px;
+    border:0;
+    border-radius:9px;
+    margin:6px 0;
+    background:#303040;
+    color:white;
+    font-size:15px;
+}
+
+#messages,#liveComments{
+    height:180px;
+    overflow-y:auto;
+    background:#11111a;
+    padding:10px;
+    border-radius:10px;
+    font-size:14px;
+}
+
+.msg{
+    padding:8px;
+    border-bottom:1px solid #333;
+    overflow-wrap:anywhere;
+}
+
+.status{
+    font-size:14px;
+    color:#c4b5fd;
+    text-align:center;
+}
+
+.small{
+    font-size:12px;
+    color:#aaa;
+    text-align:center;
+}
 </style>
 </head>
+
 <body>
 <div class="container">
 
 <h1>🎙️ NICO LIVE AI</h1>
 
 <div class="card">
-<img class="avatar" src="/avatar" alt="Nico">
-<h2 style="text-align:center">Seu parceiro de LIVE</h2>
-<p class="status">Voz masculina: Antonio Neural</p>
-<button onclick="testVoice()">🔊 TESTAR VOZ</button>
-<button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
+    <div class="avatar-wrap" id="avatarWrap">
+        <img class="avatar" src="/avatar" alt="Nico">
+    </div>
+
+    <h2 style="text-align:center">Seu parceiro de LIVE</h2>
+    <p class="status">Voz masculina: Antonio Neural</p>
+
+    <button onclick="testVoice()">🔊 TESTAR VOZ</button>
+    <button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
 </div>
 
 <div class="card">
-<h2>📱 Conexão TikTok LIVE</h2>
-<p class="status" id="liveStatus">Verificando conexão...</p>
-<button onclick="connectTikTok()" id="connectBtn">🔴 CONECTAR TIKTOK</button>
-<button class="secondary" onclick="checkStatus()">ATUALIZAR STATUS</button>
-<p class="small">Conta: @nicotriste53</p>
+    <h2>📱 Conexão TikTok LIVE</h2>
+    <p class="status" id="liveStatus">Verificando conexão...</p>
+
+    <button onclick="connectTikTok()" id="connectBtn">
+        🔴 CONECTAR TIKTOK
+    </button>
+
+    <button class="secondary" onclick="checkStatus()">
+        ATUALIZAR STATUS
+    </button>
+
+    <p class="small">Conta: @nicotriste53</p>
 </div>
 
 <div class="card">
-<h2>🤖 Resposta automática</h2>
-<p class="status" id="autoStatus">Respostas automáticas desligadas</p>
-<button onclick="enableAuto()" id="autoBtn">ATIVAR RESPOSTAS AUTOMÁTICAS</button>
-<p class="small">O Nico responderá aos comentários recebidos na LIVE.</p>
+    <h2>🤖 Resposta automática</h2>
+    <p class="status" id="autoStatus">
+        Respostas automáticas desligadas
+    </p>
+
+    <button onclick="enableAuto()" id="autoBtn">
+        ATIVAR RESPOSTAS AUTOMÁTICAS
+    </button>
+
+    <p class="small">
+        O Nico responderá aos comentários e presentes recebidos na LIVE.
+    </p>
 </div>
 
 <div class="card">
-<h2>💬 Comentários da LIVE</h2>
-<div id="liveComments">Aguardando comentários...</div>
+    <h2>💬 Comentários e presentes</h2>
+    <div id="liveComments">Aguardando mensagens...</div>
 </div>
 
 <div class="card">
-<h2>💬 Conversar com Nico</h2>
-<input id="username" placeholder="Nome da pessoa" value="visitante">
-<input id="message" placeholder="Digite uma mensagem">
-<button onclick="sendMessage()">ENVIAR MENSAGEM</button>
-<div id="messages"></div>
+    <h2>💬 Conversar com Nico</h2>
+
+    <input id="username" placeholder="Nome da pessoa" value="visitante">
+    <input id="message" placeholder="Digite uma mensagem">
+
+    <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
+
+    <div id="messages"></div>
 </div>
 
 <audio id="audio" controls style="width:100%;margin-top:10px"></audio>
@@ -80,6 +204,15 @@ let queue = [];
 let seenIds = new Set();
 
 const audio = document.getElementById("audio");
+const avatarWrap = document.getElementById("avatarWrap");
+
+function setSpeaking(active){
+    avatarWrap.classList.toggle("speaking", active);
+}
+
+audio.addEventListener("play", () => setSpeaking(true));
+audio.addEventListener("ended", () => setSpeaking(false));
+audio.addEventListener("pause", () => setSpeaking(false));
 
 function addMessage(who, text) {
     const box = document.getElementById("messages");
@@ -113,20 +246,25 @@ async function speak(text) {
     const blob = await response.blob();
 
     if (audioUrl) URL.revokeObjectURL(audioUrl);
-    audioUrl = URL.createObjectURL(blob);
 
+    audioUrl = URL.createObjectURL(blob);
     audio.src = audioUrl;
+
     await audio.play();
 
     await new Promise((resolve, reject) => {
         audio.onended = resolve;
-        audio.onerror = () => reject(new Error("Erro ao reproduzir áudio."));
+        audio.onerror = () => reject(
+            new Error("Erro ao reproduzir áudio.")
+        );
     });
 }
 
 async function testVoice() {
     try {
-        await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
+        await speak(
+            "Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!"
+        );
     } catch(error) {
         addMessage("Sistema", error.message);
     }
@@ -135,6 +273,7 @@ async function testVoice() {
 function stopVoice() {
     audio.pause();
     audio.currentTime = 0;
+    setSpeaking(false);
 }
 
 async function getAIReply(username, message) {
@@ -154,8 +293,11 @@ async function getAIReply(username, message) {
 }
 
 async function sendMessage() {
-    const username = document.getElementById("username").value.trim() || "visitante";
-    const message = document.getElementById("message").value.trim();
+    const username =
+        document.getElementById("username").value.trim() || "visitante";
+
+    const message =
+        document.getElementById("message").value.trim();
 
     if (!message) return;
 
@@ -175,7 +317,8 @@ async function connectTikTok() {
     const button = document.getElementById("connectBtn");
     button.disabled = true;
 
-    document.getElementById("liveStatus").textContent = "Tentando conectar...";
+    document.getElementById("liveStatus").textContent =
+        "Tentando conectar...";
 
     try {
         const response = await fetch(API + "/tiktok/start", {
@@ -184,7 +327,9 @@ async function connectTikTok() {
 
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "Falha na conexão");
+        if (!response.ok) {
+            throw new Error(data.error || "Falha na conexão");
+        }
 
         document.getElementById("liveStatus").textContent =
             data.message || data.status;
@@ -193,7 +338,9 @@ async function connectTikTok() {
         setTimeout(checkStatus, 2000);
 
     } catch(error) {
-        document.getElementById("liveStatus").textContent = error.message;
+        document.getElementById("liveStatus").textContent =
+            error.message;
+
         button.disabled = false;
     }
 }
@@ -209,7 +356,9 @@ async function checkStatus() {
             "🟡 " + data.status;
 
         if (data.connected) {
-            document.getElementById("connectBtn").textContent = "CONECTADO";
+            document.getElementById("connectBtn").textContent =
+                "CONECTADO";
+
             document.getElementById("connectBtn").disabled = true;
         } else {
             document.getElementById("connectBtn").disabled = false;
@@ -223,7 +372,10 @@ async function checkStatus() {
 
 async function getComments() {
     try {
-        const response = await fetch(API + "/tiktok/events?since=" + lastId);
+        const response = await fetch(
+            API + "/tiktok/events?since=" + lastId
+        );
+
         const data = await response.json();
 
         for (const item of data.comments || []) {
@@ -232,16 +384,18 @@ async function getComments() {
             if (seenIds.has(item.id)) continue;
             seenIds.add(item.id);
 
-            addLiveComment(item.username, item.message);
+            const message = item.message || "";
 
-            if (automatic && item.message.trim()) {
+            addLiveComment(item.username, message);
+
+            if (automatic && message.trim()) {
                 queue.push(item);
                 processQueue();
             }
         }
 
     } catch(error) {
-        console.log("Erro ao buscar comentários:", error);
+        console.log("Erro ao buscar eventos:", error);
     }
 }
 
@@ -266,14 +420,18 @@ async function processQueue() {
                 addMessage("Nico", reply);
                 await speak(reply);
 
-                await new Promise(resolve => setTimeout(resolve, 700));
+                await new Promise(resolve =>
+                    setTimeout(resolve, 700)
+                );
 
             } catch(error) {
                 addMessage("Sistema", error.message);
+
                 document.getElementById("autoStatus").textContent =
                     "Erro ao responder. Verifique o painel.";
             }
         }
+
     } finally {
         speaking = false;
 
@@ -281,7 +439,8 @@ async function processQueue() {
             processQueue();
         } else {
             document.getElementById("autoStatus").textContent =
-                automatic ? "🟢 Respostas automáticas ligadas" :
+                automatic ?
+                "🟢 Respostas automáticas ligadas" :
                 "Respostas automáticas desligadas";
         }
     }
@@ -291,11 +450,13 @@ function enableAuto() {
     automatic = !automatic;
 
     document.getElementById("autoBtn").textContent =
-        automatic ? "DESATIVAR RESPOSTAS AUTOMÁTICAS" :
+        automatic ?
+        "DESATIVAR RESPOSTAS AUTOMÁTICAS" :
         "ATIVAR RESPOSTAS AUTOMÁTICAS";
 
     document.getElementById("autoStatus").textContent =
-        automatic ? "🟢 Respostas automáticas ligadas" :
+        automatic ?
+        "🟢 Respostas automáticas ligadas" :
         "Respostas automáticas desligadas";
 
     if (automatic) {
@@ -309,7 +470,6 @@ function startPolling() {
     if (polling) return;
 
     polling = true;
-
     getComments();
 
     setInterval(async () => {
@@ -320,5 +480,6 @@ function startPolling() {
 
 checkStatus();
 </script>
+
 </body>
 </html>
