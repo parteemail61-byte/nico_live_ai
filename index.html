@@ -17,8 +17,8 @@ button{width:100%;padding:14px;border:0;border-radius:10px;background:#8056e8;co
 button.secondary{background:#39394b}
 button:disabled{opacity:.5}
 input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background:#303040;color:white;font-size:15px}
-#messages{height:180px;overflow-y:auto;background:#11111a;padding:10px;border-radius:10px;font-size:14px}
-.msg{padding:8px;border-bottom:1px solid #333}
+#messages,#liveComments{height:180px;overflow-y:auto;background:#11111a;padding:10px;border-radius:10px;font-size:14px}
+.msg{padding:8px;border-bottom:1px solid #333;overflow-wrap:anywhere}
 .status{font-size:14px;color:#c4b5fd;text-align:center}
 .small{font-size:12px;color:#aaa;text-align:center}
 </style>
@@ -38,10 +38,17 @@ input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background
 
 <div class="card">
 <h2>📱 Conexão TikTok LIVE</h2>
-<p class="status" id="liveStatus">Desconectado</p>
+<p class="status" id="liveStatus">Verificando conexão...</p>
 <button onclick="connectTikTok()" id="connectBtn">🔴 CONECTAR TIKTOK</button>
 <button class="secondary" onclick="checkStatus()">ATUALIZAR STATUS</button>
 <p class="small">Conta: @nicotriste53</p>
+</div>
+
+<div class="card">
+<h2>🤖 Resposta automática</h2>
+<p class="status" id="autoStatus">Respostas automáticas desligadas</p>
+<button onclick="enableAuto()" id="autoBtn">ATIVAR RESPOSTAS AUTOMÁTICAS</button>
+<p class="small">O Nico responderá aos comentários recebidos na LIVE.</p>
 </div>
 
 <div class="card">
@@ -63,9 +70,16 @@ input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background
 
 <script>
 const API = window.location.origin;
+
 let lastId = 0;
 let audioUrl = null;
 let polling = false;
+let automatic = false;
+let speaking = false;
+let queue = [];
+let seenIds = new Set();
+
+const audio = document.getElementById("audio");
 
 function addMessage(who, text) {
     const box = document.getElementById("messages");
@@ -76,37 +90,67 @@ function addMessage(who, text) {
     box.scrollTop = box.scrollHeight;
 }
 
+function addLiveComment(who, message) {
+    const box = document.getElementById("liveComments");
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.textContent = who + ": " + message;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
 async function speak(text) {
+    const response = await fetch(API + "/speak", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({text})
+    });
+
+    if (!response.ok) {
+        throw new Error("Erro ao gerar a voz do Nico.");
+    }
+
+    const blob = await response.blob();
+
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(blob);
+
+    audio.src = audioUrl;
+    await audio.play();
+
+    await new Promise((resolve, reject) => {
+        audio.onended = resolve;
+        audio.onerror = () => reject(new Error("Erro ao reproduzir áudio."));
+    });
+}
+
+async function testVoice() {
     try {
-        const response = await fetch(API + "/speak", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({text})
-        });
-
-        if (!response.ok) throw new Error("Falha ao gerar áudio");
-
-        const blob = await response.blob();
-
-        if (audioUrl) URL.revokeObjectURL(audioUrl);
-        audioUrl = URL.createObjectURL(blob);
-
-        const audio = document.getElementById("audio");
-        audio.src = audioUrl;
-        await audio.play();
+        await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
     } catch(error) {
         addMessage("Sistema", error.message);
     }
 }
 
-async function testVoice() {
-    await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
-}
-
 function stopVoice() {
-    const audio = document.getElementById("audio");
     audio.pause();
     audio.currentTime = 0;
+}
+
+async function getAIReply(username, message) {
+    const response = await fetch(API + "/chat", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({username, message})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || "Erro na inteligência artificial.");
+    }
+
+    return data.reply;
 }
 
 async function sendMessage() {
@@ -119,18 +163,9 @@ async function sendMessage() {
     document.getElementById("message").value = "";
 
     try {
-        const response = await fetch(API + "/chat", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({username, message})
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) throw new Error(data.error || "Erro na resposta");
-
-        addMessage("Nico", data.reply);
-        await speak(data.reply);
+        const reply = await getAIReply(username, message);
+        addMessage("Nico", reply);
+        await speak(reply);
     } catch(error) {
         addMessage("Sistema", error.message);
     }
@@ -139,6 +174,7 @@ async function sendMessage() {
 async function connectTikTok() {
     const button = document.getElementById("connectBtn");
     button.disabled = true;
+
     document.getElementById("liveStatus").textContent = "Tentando conectar...";
 
     try {
@@ -147,14 +183,17 @@ async function connectTikTok() {
         });
 
         const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Falha na conexão");
+
         document.getElementById("liveStatus").textContent =
             data.message || data.status;
 
-        setTimeout(checkStatus, 3000);
         startPolling();
+        setTimeout(checkStatus, 2000);
+
     } catch(error) {
-        document.getElementById("liveStatus").textContent =
-            "Erro: " + error.message;
+        document.getElementById("liveStatus").textContent = error.message;
         button.disabled = false;
     }
 }
@@ -171,7 +210,11 @@ async function checkStatus() {
 
         if (data.connected) {
             document.getElementById("connectBtn").textContent = "CONECTADO";
+            document.getElementById("connectBtn").disabled = true;
+        } else {
+            document.getElementById("connectBtn").disabled = false;
         }
+
     } catch(error) {
         document.getElementById("liveStatus").textContent =
             "Não foi possível consultar o servidor";
@@ -186,19 +229,88 @@ async function getComments() {
         for (const item of data.comments || []) {
             lastId = Math.max(lastId, item.id);
 
-            const box = document.getElementById("liveComments");
-            const div = document.createElement("div");
-            div.className = "msg";
-            div.textContent = item.username + ": " + item.message;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            if (seenIds.has(item.id)) continue;
+            seenIds.add(item.id);
+
+            addLiveComment(item.username, item.message);
+
+            if (automatic && item.message.trim()) {
+                queue.push(item);
+                processQueue();
+            }
         }
-    } catch(error) {}
+
+    } catch(error) {
+        console.log("Erro ao buscar comentários:", error);
+    }
+}
+
+async function processQueue() {
+    if (speaking || !automatic || queue.length === 0) return;
+
+    speaking = true;
+
+    try {
+        while (queue.length > 0 && automatic) {
+            const item = queue.shift();
+
+            document.getElementById("autoStatus").textContent =
+                "🤖 Nico está respondendo " + item.username;
+
+            try {
+                const reply = await getAIReply(
+                    item.username,
+                    item.message
+                );
+
+                addMessage("Nico", reply);
+                await speak(reply);
+
+                await new Promise(resolve => setTimeout(resolve, 700));
+
+            } catch(error) {
+                addMessage("Sistema", error.message);
+                document.getElementById("autoStatus").textContent =
+                    "Erro ao responder. Verifique o painel.";
+            }
+        }
+    } finally {
+        speaking = false;
+
+        if (automatic && queue.length > 0) {
+            processQueue();
+        } else {
+            document.getElementById("autoStatus").textContent =
+                automatic ? "🟢 Respostas automáticas ligadas" :
+                "Respostas automáticas desligadas";
+        }
+    }
+}
+
+function enableAuto() {
+    automatic = !automatic;
+
+    document.getElementById("autoBtn").textContent =
+        automatic ? "DESATIVAR RESPOSTAS AUTOMÁTICAS" :
+        "ATIVAR RESPOSTAS AUTOMÁTICAS";
+
+    document.getElementById("autoStatus").textContent =
+        automatic ? "🟢 Respostas automáticas ligadas" :
+        "Respostas automáticas desligadas";
+
+    if (automatic) {
+        processQueue();
+    } else {
+        queue = [];
+    }
 }
 
 function startPolling() {
     if (polling) return;
+
     polling = true;
+
+    getComments();
 
     setInterval(async () => {
         await checkStatus();
