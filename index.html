@@ -3,185 +3,154 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nico LIVE AI</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090d17;color:#fff;font-family:Arial,sans-serif}
-header{padding:20px;text-align:center;background:#121b2b;border-bottom:1px solid #26334a}
-header h1{margin:0;color:#35e6a0}
-header p{color:#9eabc0;font-size:13px}
-main{max-width:850px;margin:auto;padding:15px}
-.card{background:#141e30;border:1px solid #2b3b55;border-radius:16px;padding:16px;margin-bottom:15px}
-.profile{text-align:center}
-.avatar{width:150px;height:150px;object-fit:cover;border-radius:50%;border:4px solid #35e6a0;background:#222}
-.status{color:#35e6a0;font-size:13px;margin-top:10px}
-h2{font-size:17px;margin:0 0 14px}
-button{border:0;border-radius:9px;padding:12px 15px;background:#35e6a0;color:#06140e;font-weight:bold;margin:3px}
-.secondary{background:#33435d;color:white}
-.red{background:#df5366;color:white}
-input,select{width:100%;padding:13px;border-radius:9px;border:1px solid #394b67;background:#0a1220;color:white;margin:8px 0 12px}
-.chat{height:270px;overflow:auto;background:#09111e;padding:10px;border-radius:10px}
-.msg{padding:10px;border-radius:9px;margin:7px 0;font-size:14px;overflow-wrap:anywhere}
-.user{background:#263e59}
-.nico{background:#164334}
-.system{color:#9eabc0;text-align:center;font-size:12px;padding:8px}
-.row{display:flex;gap:7px;flex-wrap:wrap}
-.row button{flex:1}
-small{color:#aab6c9}
-label{font-size:13px;color:#c4d0e2}
+body{margin:0;background:#101018;color:#fff;font-family:Arial,sans-serif;padding:18px}
+.container{max-width:520px;margin:auto}
+header{text-align:center;margin-bottom:20px}
+h1{color:#a78bfa;margin-bottom:5px}
+.panel{background:#1c1c29;padding:18px;border-radius:16px;margin-bottom:15px}
+.avatar{width:125px;height:125px;object-fit:cover;border-radius:50%;display:block;margin:10px auto;border:3px solid #a78bfa}
+button{border:0;border-radius:10px;padding:13px;background:#8056e8;color:white;font-weight:bold;margin:4px;cursor:pointer}
+button.secondary{background:#383849}
+input{width:100%;padding:14px;border-radius:9px;border:1px solid #444;background:#101018;color:white;margin:7px 0}
+#messages{height:220px;overflow:auto;background:#101018;padding:12px;border-radius:10px;margin:12px 0}
+.msg{padding:8px;border-bottom:1px solid #333;line-height:1.4}
+.status{text-align:center;color:#aaa;font-size:13px}
 </style>
 </head>
 <body>
+<div class="container">
 <header>
-<h1>🎤 NICO LIVE AI</h1>
-<p>Seu parceiro inteligente de LIVE</p>
+<h1>🎙️ NICO LIVE AI</h1>
+<div class="status" id="status">Conectando...</div>
 </header>
 
-<main>
-<section class="card profile">
+<div class="panel">
 <img class="avatar" src="/avatar" alt="Nico">
-<h2 style="margin-top:12px">NICO</h2>
-<div class="status" id="status">● Verificando conexão...</div>
-</section>
-
-<section class="card">
-<h2>🔊 Voz do Nico</h2>
-<label>Escolha uma voz instalada no celular</label>
-<select id="voice"></select>
-<div class="row">
+<h3 style="text-align:center">🔊 Voz do Nico</h3>
+<p class="status">Voz masculina neural — Português Brasil</p>
 <button onclick="testVoice()">TESTAR VOZ</button>
-<button class="red" onclick="stopVoice()">PARAR VOZ</button>
+<button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
+<div class="status" id="voiceStatus">Voz Antonio Neural</div>
 </div>
-<p><small>Usa a voz disponível nas configurações de fala do Android.</small></p>
-</section>
 
-<section class="card">
-<h2>💬 Conversar com Nico</h2>
-<div class="chat" id="chat">
-<div class="system">Nico está esperando você mandar uma mensagem!</div>
-</div>
-<input id="username" placeholder="Nome de quem está falando (opcional)">
-<input id="message" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter')sendMessage()">
-<div class="row">
+<div class="panel">
+<h3>💬 Conversar com Nico</h3>
+<input id="username" placeholder="Nome da pessoa" value="visitante">
+<input id="message" placeholder="Digite uma mensagem">
 <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
 <button class="secondary" onclick="clearChat()">LIMPAR</button>
+<div id="messages">
+<div class="msg">Sistema: Aguardando mensagens...</div>
 </div>
-</section>
-
-<section class="card">
-<h2>🎁 Comandos rápidos</h2>
-<div class="row">
-<button onclick="quick('Dê boas-vindas para todo mundo que chegou na live!')">❤️ Boas-vindas</button>
-<button onclick="quick('Mande um salve para a família da live!')">👋 Mandar salve</button>
-<button onclick="quick('Agradeça com carinho pelo presente recebido!')">🎁 Agradecer</button>
 </div>
-</section>
+</div>
 
-<section class="card">
-<h2>⚙️ Configurações</h2>
-<label><input id="autoSpeak" type="checkbox" checked style="width:auto"> Falar respostas automaticamente</label>
-<p><small>O painel já responde mensagens digitadas. A conexão automática com comentários do TikTok será configurada depois.</small></p>
-</section>
-</main>
+<audio id="nicoAudio" playsinline></audio>
 
 <script>
-const chat=document.getElementById("chat");
-const statusEl=document.getElementById("status");
-const voiceSelect=document.getElementById("voice");
-let voices=[];
+const audio = document.getElementById("nicoAudio");
+let currentAudioUrl = null;
 
-function loadVoices(){
- voices=speechSynthesis.getVoices();
- voiceSelect.innerHTML="";
- const pt=voices.filter(v=>v.lang.toLowerCase().startsWith("pt"));
- const available=pt.length?pt:voices;
- available.forEach(v=>{
-  const op=document.createElement("option");
-  op.value=voices.indexOf(v);
-  op.textContent=v.name+" ("+v.lang+")";
-  voiceSelect.appendChild(op);
- });
- if(!available.length){
-  voiceSelect.innerHTML='<option value="">Vozes não encontradas</option>';
+function addMessage(name,text){
+ const box=document.getElementById("messages");
+ const div=document.createElement("div");
+ div.className="msg";
+ div.textContent=name+": "+text;
+ box.appendChild(div);
+ box.scrollTop=box.scrollHeight;
+}
+
+async function speak(text){
+ try{
+  stopVoice();
+  document.getElementById("voiceStatus").textContent="Gerando voz masculina...";
+  const response=await fetch("/speak",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({text:text})
+  });
+  if(!response.ok){
+   const err=await response.json();
+   throw new Error(err.error||"Falha ao gerar áudio");
+  }
+  const blob=await response.blob();
+  currentAudioUrl=URL.createObjectURL(blob);
+  audio.src=currentAudioUrl;
+  audio.onended=()=>{
+   document.getElementById("voiceStatus").textContent="Voz pronta";
+   if(currentAudioUrl){
+    URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl=null;
+   }
+  };
+  await audio.play();
+  document.getElementById("voiceStatus").textContent="Nico está falando...";
+ }catch(error){
+  document.getElementById("voiceStatus").textContent="Erro: "+error.message;
+  addMessage("Sistema",error.message);
  }
 }
-loadVoices();
-speechSynthesis.onvoiceschanged=loadVoices;
 
-function speak(text){
- if(!document.getElementById("autoSpeak").checked)return;
- speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);
- u.lang="pt-BR";
- u.rate=1;
- u.pitch=0.9;
- u.volume=1;
- if(voiceSelect.value!=="" && voices[voiceSelect.value]){
-  u.voice=voices[voiceSelect.value];
+function stopVoice(){
+ audio.pause();
+ audio.currentTime=0;
+ if(currentAudioUrl){
+  URL.revokeObjectURL(currentAudioUrl);
+  currentAudioUrl=null;
  }
- speechSynthesis.speak(u);
+ document.getElementById("voiceStatus").textContent="Voz parada";
 }
 
 function testVoice(){
- speak("E aí, família! Aqui é o Nico! Sejam todos muito bem-vindos à nossa live!");
-}
-function stopVoice(){speechSynthesis.cancel()}
-
-function addMessage(type,name,text){
- const div=document.createElement("div");
- div.className="msg "+type;
- const b=document.createElement("b");
- b.textContent=name+": ";
- div.appendChild(b);
- div.appendChild(document.createTextNode(text));
- chat.appendChild(div);
- chat.scrollTop=chat.scrollHeight;
+ speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");
 }
 
 async function sendMessage(){
- const input=document.getElementById("message");
- const msg=input.value.trim();
+ const message=document.getElementById("message").value.trim();
  const username=document.getElementById("username").value.trim()||"visitante";
- if(!msg)return;
- input.value="";
- addMessage("user",username,msg);
- statusEl.textContent="● Nico está pensando...";
+ if(!message)return;
+ document.getElementById("message").value="";
+ addMessage(username,message);
+ addMessage("Nico","Pensando...");
  try{
-  const r=await fetch("/chat",{
+  const response=await fetch("/chat",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({message:msg,username:username})
+   body:JSON.stringify({message,username})
   });
-  const data=await r.json();
-  if(!r.ok)throw new Error(data.error||"Erro na resposta");
-  addMessage("nico","Nico",data.reply);
-  speak(data.reply);
-  statusEl.textContent="● Nico online";
- }catch(e){
-  addMessage("system","Sistema",e.message);
-  statusEl.textContent="● Erro de conexão";
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"Erro na conversa");
+  const box=document.getElementById("messages");
+  const last=box.lastElementChild;
+  if(last && last.textContent==="Nico: Pensando...")last.remove();
+  addMessage("Nico",data.reply);
+  await speak(data.reply);
+ }catch(error){
+  addMessage("Sistema",error.message);
  }
 }
 
-function quick(msg){
- document.getElementById("message").value=msg;
- sendMessage();
-}
 function clearChat(){
- chat.innerHTML='<div class="system">Conversa limpa.</div>';
+ document.getElementById("messages").innerHTML="";
 }
 
-async function checkServer(){
- try{
-  const r=await fetch("/health");
-  const d=await r.json();
-  statusEl.textContent=d.ai_configured?"● Servidor e IA conectados":"● Falta configurar a IA";
- }catch(e){
-  statusEl.textContent="● Servidor indisponível";
- }
-}
-checkServer();
+document.getElementById("message").addEventListener("keydown",e=>{
+ if(e.key==="Enter")sendMessage();
+});
+
+fetch("/health")
+.then(r=>r.json())
+.then(data=>{
+ document.getElementById("status").textContent=
+ data.status==="ok"?"🟢 Sistema online":"Sistema indisponível";
+})
+.catch(()=>{
+ document.getElementById("status").textContent="🔴 Erro de conexão";
+});
 </script>
 </body>
 </html>
