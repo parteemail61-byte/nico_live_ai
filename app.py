@@ -8,9 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
-
-VOICE_NAME = "Android - voz do celular"
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 @app.route("/")
 def home():
@@ -26,7 +24,7 @@ def health():
         "status": "ok",
         "project": "Nico LIVE AI",
         "ai_configured": bool(GROQ_API_KEY),
-        "voice": VOICE_NAME,
+        "voice": "Android - voz do celular",
         "voice_configured": True
     })
 
@@ -35,14 +33,12 @@ def chat():
     try:
         data = request.get_json(silent=True) or {}
         message = data.get("message", "").strip()
-
         if not message:
             return jsonify({"error": "Mensagem vazia"}), 400
-
-        if not groq_client:
+        if not client:
             return jsonify({"error": "IA não configurada"}), 500
 
-        result = groq_client.chat.completions.create(
+        result = client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=[
                 {
@@ -51,9 +47,9 @@ def chat():
                         "Seu nome é Nico. Você é um rapaz jovem, "
                         "simpático, divertido e espontâneo. "
                         "Fala português brasileiro natural. "
-                        "Responde de forma curta, como numa LIVE. "
-                        "Chama as pessoas pelo nome quando disponível. "
-                        "Não diga que é um robô."
+                        "Responde de forma curta e descontraída, "
+                        "como numa LIVE. Chama as pessoas pelo nome "
+                        "quando disponível. Não diga que é um robô."
                     )
                 },
                 {"role": "user", "content": message}
@@ -62,12 +58,12 @@ def chat():
             max_tokens=180
         )
 
-        reply = result.choices[0].message.content.strip()
-        return jsonify({"reply": reply})
+        return jsonify({
+            "reply": result.choices[0].message.content.strip()
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-    
