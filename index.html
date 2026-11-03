@@ -19,14 +19,48 @@ h1{text-align:center;color:#a78bfa}
 .avatar.hidden{display:none}
 .avatar-wrap.speaking{animation:glow 1s infinite alternate}
 @keyframes glow{from{box-shadow:0 0 8px #8056e8}to{box-shadow:0 0 25px #a78bfa}}
+
 .fullscreen-btn{position:absolute;right:12px;bottom:12px;width:auto;margin:0;padding:12px 16px;background:#8056e8;z-index:5}
-.nico-stage:fullscreen{width:100%;height:100dvh;background:#08080d;border-radius:0;display:flex;align-items:center;justify-content:center}
-.nico-stage:fullscreen .avatar-wrap{width:100%;height:100dvh}
-.nico-stage:fullscreen .avatar,.nico-stage:fullscreen .scene-video{width:100%;height:100%;object-fit:contain}
-.nico-stage:fullscreen .fullscreen-btn{position:fixed;right:15px;bottom:20px}
-.nico-stage.fake-fullscreen{position:fixed;inset:0;width:100vw;height:100dvh;z-index:99999;border-radius:0;display:flex;align-items:center;justify-content:center}
-.nico-stage.fake-fullscreen .avatar-wrap{width:100%;height:100dvh}
-.nico-stage.fake-fullscreen .fullscreen-btn{position:fixed;right:15px;bottom:20px}
+
+/* TELA CHEIA: SOMENTE O NICO */
+.nico-stage:fullscreen,
+.nico-stage.fake-fullscreen{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  z-index:99999;
+  background:#000;
+  border-radius:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.nico-stage:fullscreen .avatar-wrap,
+.nico-stage.fake-fullscreen .avatar-wrap{
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  margin:0;
+  background:#000;
+}
+
+.nico-stage:fullscreen .avatar,
+.nico-stage:fullscreen .scene-video,
+.nico-stage.fake-fullscreen .avatar,
+.nico-stage.fake-fullscreen .scene-video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.nico-stage:fullscreen .fullscreen-btn,
+.nico-stage.fake-fullscreen .fullscreen-btn{
+  display:none;
+}
+
 h2{font-size:19px;margin-top:0}
 button{width:100%;padding:14px;border:0;border-radius:10px;background:#8056e8;color:white;font-size:15px;font-weight:bold;margin-top:9px}
 button.secondary{background:#39394b}
@@ -108,7 +142,9 @@ let processingQueue=false;
 let entertainmentBusy=false;
 let seenIds=new Set();
 let entertainmentTimer=null;
-let entertainmentTopics=[
+let lastTopic=-1;
+
+const entertainmentTopics=[
 "conte uma piada curta e divertida e termine com uma pergunta para o público",
 "conte uma mini-história engraçada que prenda a atenção e pergunte o que o público faria",
 "lance um desafio simples para quem está assistindo participar pelo chat",
@@ -116,7 +152,6 @@ let entertainmentTopics=[
 "crie uma brincadeira rápida para movimentar a LIVE",
 "conte uma curiosidade interessante de um jeito descontraído e pergunte se alguém sabia"
 ];
-let lastTopic=-1;
 
 const audio=document.getElementById("audio");
 const avatarWrap=document.getElementById("avatarWrap");
@@ -143,15 +178,39 @@ idleVideo.addEventListener("error",()=>defaultAvatar.classList.remove("hidden"))
 idleVideo.addEventListener("playing",()=>defaultAvatar.classList.add("hidden"));
 talkVideo.addEventListener("error",()=>console.log("Vídeo de fala indisponível"));
 
+/* TELA CHEIA E SAÍDA PELO BOTÃO VOLTAR */
 async function toggleFullscreen(){
   try{
-    if(document.fullscreenElement===nicoStage)await document.exitFullscreen();
-    else if(nicoStage.classList.contains("fake-fullscreen"))nicoStage.classList.remove("fake-fullscreen");
-    else if(nicoStage.requestFullscreen)await nicoStage.requestFullscreen();
-    else nicoStage.classList.add("fake-fullscreen");
-  }catch(error){nicoStage.classList.add("fake-fullscreen");}
+    if(document.fullscreenElement===nicoStage){
+      await document.exitFullscreen();
+      return;
+    }
+
+    if(nicoStage.classList.contains("fake-fullscreen")){
+      nicoStage.classList.remove("fake-fullscreen");
+      return;
+    }
+
+    if(nicoStage.requestFullscreen){
+      await nicoStage.requestFullscreen();
+    }else{
+      nicoStage.classList.add("fake-fullscreen");
+      history.pushState({nicoFullscreen:true},"","#nico-fullscreen");
+    }
+  }catch(error){
+    nicoStage.classList.add("fake-fullscreen");
+    history.pushState({nicoFullscreen:true},"","#nico-fullscreen");
+  }
+
   updateFullscreenButton();
 }
+
+window.addEventListener("popstate",()=>{
+  if(nicoStage.classList.contains("fake-fullscreen")){
+    nicoStage.classList.remove("fake-fullscreen");
+    updateFullscreenButton();
+  }
+});
 
 function updateFullscreenButton(){
   const active=document.fullscreenElement===nicoStage||nicoStage.classList.contains("fake-fullscreen");
@@ -366,7 +425,7 @@ function enableAuto(){
 
   if(automatic){
     startPolling();
-    startEntertainmentTimer();
+    if(entertainment)startEntertainmentTimer();
     processQueue();
   }else{
     queue=[];
@@ -400,7 +459,6 @@ function toggleEntertainment(){
 
 function startEntertainmentTimer(){
   if(entertainmentTimer)return;
-
   entertainmentTimer=setInterval(runEntertainment,35000);
 }
 
