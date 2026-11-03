@@ -40,7 +40,6 @@ lock = threading.Lock()
 
 def add_live_event(username, message, event_type="comment"):
     global comment_id
-
     with lock:
         comment_id += 1
         comments.append({
@@ -53,12 +52,34 @@ def add_live_event(username, message, event_type="comment"):
 
 @app.route("/")
 def home():
-    return send_file("index.html")
+    return send_file(os.path.join(app.root_path, "index.html"))
 
 
 @app.route("/avatar")
 def avatar():
-    return send_file("watermarked_img_9725052891330264212.jpg")
+    return send_file(
+        os.path.join(
+            app.root_path,
+            "watermarked_img_9725052891330264212.jpg"
+        )
+    )
+
+
+# NOVAS ROTAS DOS VIDEOS DO NICO
+@app.route("/scene1")
+def scene1():
+    return send_file(
+        os.path.join(app.root_path, "nico_cena1.mp4"),
+        mimetype="video/mp4"
+    )
+
+
+@app.route("/scene2")
+def scene2():
+    return send_file(
+        os.path.join(app.root_path, "nico_cena2.mp4"),
+        mimetype="video/mp4"
+    )
 
 
 @app.route("/health")
@@ -144,13 +165,13 @@ def speak():
             )
 
             with tempfile.NamedTemporaryFile(
-                suffix=".mp3", delete=False
+                suffix=".mp3",
+                delete=False
             ) as temp:
                 path = temp.name
 
             try:
                 await communication.save(path)
-
                 with open(path, "rb") as audio_file:
                     return audio_file.read()
             finally:
@@ -193,11 +214,7 @@ def run_tiktok():
         @live_client.on(CommentEvent)
         async def on_comment(event):
             username = event.user.nickname or event.user.unique_id
-            add_live_event(
-                username,
-                event.comment,
-                "comment"
-            )
+            add_live_event(username, event.comment, "comment")
 
         @live_client.on(GiftEvent)
         async def on_gift(event):
@@ -206,14 +223,10 @@ def run_tiktok():
             if gift is None:
                 return
 
-            # Ignora as etapas intermediárias de presentes em sequência.
             if getattr(event, "streaking", False):
                 return
 
-            username = (
-                event.user.nickname or event.user.unique_id
-            )
-
+            username = event.user.nickname or event.user.unique_id
             gift_name = gift.name or "presente"
             quantity = int(event.repeat_count or 1)
 
@@ -222,11 +235,7 @@ def run_tiktok():
                 "Agradeça pelo presente!"
             )
 
-            add_live_event(
-                username,
-                message,
-                "gift"
-            )
+            add_live_event(username, message, "gift")
 
         live_status = "conectando"
         live_client.run()
