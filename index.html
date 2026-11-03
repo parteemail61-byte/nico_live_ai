@@ -5,693 +5,231 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nico LIVE AI</title>
-
 <style>
 *{box-sizing:border-box}
-
-body{
-    margin:0;
-    background:#101018;
-    color:white;
-    font-family:Arial,sans-serif;
-    padding:18px;
-}
-
-.container{
-    max-width:500px;
-    margin:auto;
-}
-
+body{margin:0;background:#101018;color:white;font-family:Arial,sans-serif;padding:18px}
+.container{max-width:500px;margin:auto}
 h1{text-align:center;color:#a78bfa}
-
-.card{
-    background:#1d1d2b;
-    border-radius:16px;
-    padding:18px;
-    margin:15px 0;
-}
-
-.nico-stage{
-    position:relative;
-    width:100%;
-    background:#101018;
-    border-radius:16px;
-    overflow:hidden;
-}
-
-.avatar-wrap{
-    width:100%;
-    height:420px;
-    margin:0 auto;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#101018;
-    overflow:hidden;
-    transition:box-shadow .3s;
-}
-
-.avatar{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    display:block;
-    transition:transform .25s ease;
-}
-
-.avatar-wrap.speaking{
-    animation:glow 1s infinite alternate;
-}
-
-.avatar-wrap.speaking .avatar{
-    animation:talk .7s infinite ease-in-out;
-}
-
-@keyframes talk{
-    0%{transform:translateY(0) scale(1)}
-    50%{transform:translateY(-3px) scale(1.015)}
-    100%{transform:translateY(0) scale(1)}
-}
-
-@keyframes glow{
-    from{box-shadow:0 0 8px #8056e8}
-    to{box-shadow:0 0 25px #a78bfa}
-}
-
-.fullscreen-btn{
-    position:absolute;
-    right:12px;
-    bottom:12px;
-    width:auto;
-    margin:0;
-    padding:12px 16px;
-    background:#8056e8;
-    z-index:5;
-}
-
-.nico-stage:fullscreen{
-    width:100%;
-    height:100%;
-    height:100dvh;
-    background:#08080d;
-    border-radius:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.nico-stage:fullscreen .avatar-wrap{
-    width:100%;
-    height:100%;
-    height:100dvh;
-}
-
-.nico-stage:fullscreen .avatar{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-}
-
-.nico-stage:fullscreen .fullscreen-btn{
-    position:fixed;
-    right:15px;
-    bottom:20px;
-}
-
-.nico-stage.fake-fullscreen{
-    position:fixed;
-    inset:0;
-    width:100vw;
-    height:100vh;
-    height:100dvh;
-    z-index:99999;
-    border-radius:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.nico-stage.fake-fullscreen .avatar-wrap{
-    width:100%;
-    height:100%;
-    height:100dvh;
-}
-
-.nico-stage.fake-fullscreen .fullscreen-btn{
-    position:fixed;
-    right:15px;
-    bottom:20px;
-}
-
+.card{background:#1d1d2b;border-radius:16px;padding:18px;margin:15px 0}
+.nico-stage{position:relative;width:100%;background:#101018;border-radius:16px;overflow:hidden}
+.avatar-wrap{position:relative;width:100%;height:420px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:#101018;overflow:hidden;transition:box-shadow .3s}
+.avatar,.scene-video{width:100%;height:100%;object-fit:contain;display:block}
+.scene-video{position:absolute;inset:0;opacity:0;pointer-events:none}
+.scene-video.active{opacity:1}
+.avatar.hidden{display:none}
+.avatar-wrap.speaking{animation:glow 1s infinite alternate}
+@keyframes glow{from{box-shadow:0 0 8px #8056e8}to{box-shadow:0 0 25px #a78bfa}}
+.fullscreen-btn{position:absolute;right:12px;bottom:12px;width:auto;margin:0;padding:12px 16px;background:#8056e8;z-index:5}
+.nico-stage:fullscreen{width:100%;height:100dvh;background:#08080d;border-radius:0;display:flex;align-items:center;justify-content:center}
+.nico-stage:fullscreen .avatar-wrap{width:100%;height:100dvh}
+.nico-stage:fullscreen .avatar,.nico-stage:fullscreen .scene-video{width:100%;height:100%;object-fit:contain}
+.nico-stage:fullscreen .fullscreen-btn{position:fixed;right:15px;bottom:20px}
+.nico-stage.fake-fullscreen{position:fixed;inset:0;width:100vw;height:100dvh;z-index:99999;border-radius:0;display:flex;align-items:center;justify-content:center}
+.nico-stage.fake-fullscreen .avatar-wrap{width:100%;height:100dvh}
+.nico-stage.fake-fullscreen .fullscreen-btn{position:fixed;right:15px;bottom:20px}
 h2{font-size:19px;margin-top:0}
-
-button{
-    width:100%;
-    padding:14px;
-    border:0;
-    border-radius:10px;
-    background:#8056e8;
-    color:white;
-    font-size:15px;
-    font-weight:bold;
-    margin-top:9px;
-}
-
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#8056e8;color:white;font-size:15px;font-weight:bold;margin-top:9px}
 button.secondary{background:#39394b}
 button:disabled{opacity:.5}
-
-input{
-    width:100%;
-    padding:13px;
-    border:0;
-    border-radius:9px;
-    margin:6px 0;
-    background:#303040;
-    color:white;
-    font-size:15px;
-}
-
-#messages,#liveComments{
-    height:180px;
-    overflow-y:auto;
-    background:#11111a;
-    padding:10px;
-    border-radius:10px;
-    font-size:14px;
-}
-
-.msg{
-    padding:8px;
-    border-bottom:1px solid #333;
-    overflow-wrap:anywhere;
-}
-
-.status{
-    font-size:14px;
-    color:#c4b5fd;
-    text-align:center;
-}
-
-.small{
-    font-size:12px;
-    color:#aaa;
-    text-align:center;
-}
+input{width:100%;padding:13px;border:0;border-radius:9px;margin:6px 0;background:#303040;color:white;font-size:15px}
+#messages,#liveComments{height:180px;overflow-y:auto;background:#11111a;padding:10px;border-radius:10px;font-size:14px}
+.msg{padding:8px;border-bottom:1px solid #333;overflow-wrap:anywhere}
+.status{font-size:14px;color:#c4b5fd;text-align:center}
+.small{font-size:12px;color:#aaa;text-align:center}
 </style>
 </head>
-
 <body>
 <div class="container">
-
 <h1>🎙️ NICO LIVE AI</h1>
 
 <div class="card">
-
-    <div class="nico-stage" id="nicoStage">
-
-        <div class="avatar-wrap" id="avatarWrap">
-            <img class="avatar" src="/avatar" alt="Nico">
-        </div>
-
-        <button class="fullscreen-btn"
-                id="fullscreenBtn"
-                onclick="toggleFullscreen()">
-            ⛶ TELA CHEIA
-        </button>
-
+  <div class="nico-stage" id="nicoStage">
+    <div class="avatar-wrap" id="avatarWrap">
+      <img class="avatar" id="defaultAvatar" src="/avatar" alt="Nico">
+      <video class="scene-video active" id="idleVideo" src="/scene1" muted playsinline loop autoplay preload="auto"></video>
+      <video class="scene-video" id="talkVideo" src="/scene2" muted playsinline loop preload="auto"></video>
     </div>
-
-    <h2 style="text-align:center">Seu parceiro de LIVE</h2>
-    <p class="status">Voz masculina: Antonio Neural</p>
-
-    <button onclick="testVoice()">🔊 TESTAR VOZ</button>
-    <button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
-
+    <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ TELA CHEIA</button>
+  </div>
+  <h2 style="text-align:center">Seu parceiro de LIVE</h2>
+  <p class="status">Voz masculina: Antonio Neural</p>
+  <button onclick="testVoice()">🔊 TESTAR VOZ</button>
+  <button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
 </div>
 
 <div class="card">
-
-    <h2>📱 Conexão TikTok LIVE</h2>
-
-    <p class="status" id="liveStatus">Verificando conexão...</p>
-
-    <button onclick="connectTikTok()" id="connectBtn">
-        🔴 CONECTAR TIKTOK
-    </button>
-
-    <button class="secondary" onclick="checkStatus()">
-        ATUALIZAR STATUS
-    </button>
-
-    <p class="small">Conta: @nicotriste53</p>
-
+  <h2>📱 Conexão TikTok LIVE</h2>
+  <p class="status" id="liveStatus">Verificando conexão...</p>
+  <button onclick="connectTikTok()" id="connectBtn">🔴 CONECTAR TIKTOK</button>
+  <button class="secondary" onclick="checkStatus()">ATUALIZAR STATUS</button>
+  <p class="small">Conta: @nicotriste53</p>
 </div>
 
 <div class="card">
-
-    <h2>🤖 Resposta automática</h2>
-
-    <p class="status" id="autoStatus">
-        Respostas automáticas desligadas
-    </p>
-
-    <button onclick="enableAuto()" id="autoBtn">
-        ATIVAR RESPOSTAS AUTOMÁTICAS
-    </button>
-
-    <p class="small">
-        O Nico responderá aos comentários e presentes recebidos na LIVE.
-    </p>
-
+  <h2>🤖 Resposta automática</h2>
+  <p class="status" id="autoStatus">Respostas automáticas desligadas</p>
+  <button onclick="enableAuto()" id="autoBtn">ATIVAR RESPOSTAS AUTOMÁTICAS</button>
+  <p class="small">O Nico responderá aos comentários e presentes recebidos na LIVE.</p>
 </div>
 
 <div class="card">
-
-    <h2>💬 Comentários e presentes</h2>
-
-    <div id="liveComments">Aguardando mensagens...</div>
-
+  <h2>💬 Comentários e presentes</h2>
+  <div id="liveComments">Aguardando mensagens...</div>
 </div>
 
 <div class="card">
-
-    <h2>💬 Conversar com Nico</h2>
-
-    <input id="username" placeholder="Nome da pessoa" value="visitante">
-
-    <input id="message" placeholder="Digite uma mensagem">
-
-    <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
-
-    <div id="messages"></div>
-
+  <h2>💬 Conversar com Nico</h2>
+  <input id="username" placeholder="Nome da pessoa" value="visitante">
+  <input id="message" placeholder="Digite uma mensagem">
+  <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
+  <div id="messages"></div>
 </div>
-
 <audio id="audio" controls style="width:100%;margin-top:10px"></audio>
-
 </div>
 
 <script>
-const API = window.location.origin;
+const API=window.location.origin;
+let lastId=0,audioUrl=null,polling=false,automatic=false,queue=[],processingQueue=false,seenIds=new Set();
+const audio=document.getElementById("audio");
+const avatarWrap=document.getElementById("avatarWrap");
+const nicoStage=document.getElementById("nicoStage");
+const fullscreenBtn=document.getElementById("fullscreenBtn");
+const idleVideo=document.getElementById("idleVideo");
+const talkVideo=document.getElementById("talkVideo");
+const defaultAvatar=document.getElementById("defaultAvatar");
 
-let lastId = 0;
-let audioUrl = null;
-let polling = false;
-let automatic = false;
-let speaking = false;
-let queue = [];
-let seenIds = new Set();
-
-const audio = document.getElementById("audio");
-const avatarWrap = document.getElementById("avatarWrap");
-const nicoStage = document.getElementById("nicoStage");
-const fullscreenBtn = document.getElementById("fullscreenBtn");
-
-function setSpeaking(active){
-    avatarWrap.classList.toggle("speaking", active);
+function playScene(talking){
+  const selected=talking?talkVideo:idleVideo;
+  const other=talking?idleVideo:talkVideo;
+  selected.classList.add("active");
+  other.classList.remove("active");
+  selected.play().catch(()=>{});
+  other.pause();
+  avatarWrap.classList.toggle("speaking",talking);
 }
-
-audio.addEventListener("play", () => setSpeaking(true));
-audio.addEventListener("ended", () => setSpeaking(false));
-audio.addEventListener("pause", () => setSpeaking(false));
+audio.addEventListener("play",()=>playScene(true));
+audio.addEventListener("ended",()=>playScene(false));
+audio.addEventListener("pause",()=>playScene(false));
+idleVideo.addEventListener("error",()=>{defaultAvatar.classList.remove("hidden");});
+idleVideo.addEventListener("playing",()=>{defaultAvatar.classList.add("hidden");});
+talkVideo.addEventListener("error",()=>console.log("Vídeo de fala indisponível"));
 
 async function toggleFullscreen(){
-
-    try{
-
-        if(document.fullscreenElement === nicoStage){
-
-            await document.exitFullscreen();
-
-        }else if(nicoStage.classList.contains("fake-fullscreen")){
-
-            nicoStage.classList.remove("fake-fullscreen");
-
-        }else if(nicoStage.requestFullscreen){
-
-            await nicoStage.requestFullscreen();
-
-        }else{
-
-            nicoStage.classList.add("fake-fullscreen");
-
-        }
-
-    }catch(error){
-
-        nicoStage.classList.add("fake-fullscreen");
-
-    }
-
-    updateFullscreenButton();
+  try{
+    if(document.fullscreenElement===nicoStage)await document.exitFullscreen();
+    else if(nicoStage.classList.contains("fake-fullscreen"))nicoStage.classList.remove("fake-fullscreen");
+    else if(nicoStage.requestFullscreen)await nicoStage.requestFullscreen();
+    else nicoStage.classList.add("fake-fullscreen");
+  }catch(error){nicoStage.classList.add("fake-fullscreen");}
+  updateFullscreenButton();
 }
-
 function updateFullscreenButton(){
-
-    const active =
-        document.fullscreenElement === nicoStage ||
-        nicoStage.classList.contains("fake-fullscreen");
-
-    fullscreenBtn.textContent =
-        active ? "✕ SAIR DA TELA CHEIA" : "⛶ TELA CHEIA";
+  const active=document.fullscreenElement===nicoStage||nicoStage.classList.contains("fake-fullscreen");
+  fullscreenBtn.textContent=active?"✕ SAIR DA TELA CHEIA":"⛶ TELA CHEIA";
 }
-
-document.addEventListener("fullscreenchange", updateFullscreenButton);
+document.addEventListener("fullscreenchange",updateFullscreenButton);
 
 function addMessage(who,text){
-
-    const box=document.getElementById("messages");
-    const div=document.createElement("div");
-
-    div.className="msg";
-    div.textContent=who+": "+text;
-
-    box.appendChild(div);
-    box.scrollTop=box.scrollHeight;
+  const box=document.getElementById("messages"),div=document.createElement("div");
+  div.className="msg";div.textContent=who+": "+text;box.appendChild(div);box.scrollTop=box.scrollHeight;
 }
-
 function addLiveComment(who,message){
-
-    const box=document.getElementById("liveComments");
-    const div=document.createElement("div");
-
-    div.className="msg";
-    div.textContent=who+": "+message;
-
-    box.appendChild(div);
-    box.scrollTop=box.scrollHeight;
+  const box=document.getElementById("liveComments"),div=document.createElement("div");
+  div.className="msg";div.textContent=who+": "+message;box.appendChild(div);box.scrollTop=box.scrollHeight;
 }
-
 async function speak(text){
-
-    const response=await fetch(API+"/speak",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({text})
-    });
-
-    if(!response.ok){
-        throw new Error("Erro ao gerar a voz do Nico.");
-    }
-
-    const blob=await response.blob();
-
-    if(audioUrl) URL.revokeObjectURL(audioUrl);
-
-    audioUrl=URL.createObjectURL(blob);
-    audio.src=audioUrl;
-
-    await audio.play();
-
-    await new Promise((resolve,reject)=>{
-
-        audio.onended=resolve;
-        audio.onerror=()=>reject(
-            new Error("Erro ao reproduzir áudio.")
-        );
-
-    });
+  const response=await fetch(API+"/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+  if(!response.ok)throw new Error("Erro ao gerar a voz do Nico.");
+  const blob=await response.blob();
+  if(audioUrl)URL.revokeObjectURL(audioUrl);
+  audioUrl=URL.createObjectURL(blob);audio.src=audioUrl;
+  await audio.play();
+  await new Promise((resolve,reject)=>{
+    audio.onended=resolve;
+    audio.onerror=()=>reject(new Error("Erro ao reproduzir áudio."));
+  });
 }
-
 async function testVoice(){
-
-    try{
-
-        await speak(
-            "Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!"
-        );
-
-    }catch(error){
-
-        addMessage("Sistema",error.message);
-
-    }
+  try{await speak("Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!");}
+  catch(error){addMessage("Sistema",error.message);}
 }
-
-function stopVoice(){
-
-    audio.pause();
-    audio.currentTime=0;
-    setSpeaking(false);
-
-}
-
+function stopVoice(){audio.pause();audio.currentTime=0;playScene(false);}
 async function getAIReply(username,message){
-
-    const response=await fetch(API+"/chat",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({username,message})
-    });
-
-    const data=await response.json();
-
-    if(!response.ok){
-        throw new Error(data.error || "Erro na inteligência artificial.");
-    }
-
-    return data.reply;
+  const response=await fetch(API+"/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,message})});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"Erro na inteligência artificial.");
+  return data.reply;
 }
-
 async function sendMessage(){
-
-    const username=
-        document.getElementById("username").value.trim() || "visitante";
-
-    const message=
-        document.getElementById("message").value.trim();
-
-    if(!message)return;
-
-    addMessage(username,message);
-
-    document.getElementById("message").value="";
-
-    try{
-
-        const reply=await getAIReply(username,message);
-
-        addMessage("Nico",reply);
-
-        await speak(reply);
-
-    }catch(error){
-
-        addMessage("Sistema",error.message);
-
-    }
+  const username=document.getElementById("username").value.trim()||"visitante";
+  const message=document.getElementById("message").value.trim();
+  if(!message)return;
+  addMessage(username,message);document.getElementById("message").value="";
+  try{const reply=await getAIReply(username,message);addMessage("Nico",reply);await speak(reply);}
+  catch(error){addMessage("Sistema",error.message);}
 }
-
 async function connectTikTok(){
-
-    const button=document.getElementById("connectBtn");
-
-    button.disabled=true;
-
-    document.getElementById("liveStatus").textContent=
-        "Tentando conectar...";
-
-    try{
-
-        const response=await fetch(API+"/tiktok/start",{
-            method:"POST"
-        });
-
-        const data=await response.json();
-
-        if(!response.ok){
-            throw new Error(data.error || "Falha na conexão");
-        }
-
-        document.getElementById("liveStatus").textContent=
-            data.message || data.status;
-
-        startPolling();
-
-        setTimeout(checkStatus,2000);
-
-    }catch(error){
-
-        document.getElementById("liveStatus").textContent=
-            error.message;
-
-        button.disabled=false;
-
-    }
+  const button=document.getElementById("connectBtn");button.disabled=true;
+  document.getElementById("liveStatus").textContent="Tentando conectar...";
+  try{
+    const response=await fetch(API+"/tiktok/start",{method:"POST"}),data=await response.json();
+    if(!response.ok)throw new Error(data.error||"Falha na conexão");
+    document.getElementById("liveStatus").textContent=data.message||data.status;
+    startPolling();setTimeout(checkStatus,2000);
+  }catch(error){document.getElementById("liveStatus").textContent=error.message;button.disabled=false;}
 }
-
 async function checkStatus(){
-
-    try{
-
-        const response=await fetch(API+"/tiktok/status");
-        const data=await response.json();
-
-        document.getElementById("liveStatus").textContent=
-            data.connected ? "🟢 Conectado à LIVE!" :
-            data.status==="erro" ? "🔴 Erro: "+data.error :
-            "🟡 "+data.status;
-
-        if(data.connected){
-
-            document.getElementById("connectBtn").textContent=
-                "CONECTADO";
-
-            document.getElementById("connectBtn").disabled=true;
-
-        }else{
-
-            document.getElementById("connectBtn").disabled=false;
-
-        }
-
-    }catch(error){
-
-        document.getElementById("liveStatus").textContent=
-            "Não foi possível consultar o servidor";
-
-    }
+  try{
+    const response=await fetch(API+"/tiktok/status"),data=await response.json();
+    document.getElementById("liveStatus").textContent=data.connected?"🟢 Conectado à LIVE!":data.status==="erro"?"🔴 Erro: "+data.error:"🟡 "+data.status;
+    if(data.connected){document.getElementById("connectBtn").textContent="CONECTADO";document.getElementById("connectBtn").disabled=true;}
+    else document.getElementById("connectBtn").disabled=false;
+  }catch(error){document.getElementById("liveStatus").textContent="Não foi possível consultar o servidor";}
 }
-
 async function getComments(){
-
-    try{
-
-        const response=await fetch(
-            API+"/tiktok/events?since="+lastId
-        );
-
-        const data=await response.json();
-
-        for(const item of data.comments || []){
-
-            lastId=Math.max(lastId,item.id);
-
-            if(seenIds.has(item.id))continue;
-
-            seenIds.add(item.id);
-
-            const message=item.message || "";
-
-            addLiveComment(item.username,message);
-
-            if(automatic && message.trim()){
-
-                queue.push(item);
-                processQueue();
-
-            }
-        }
-
-    }catch(error){
-
-        console.log("Erro ao buscar eventos:",error);
-
+  try{
+    const response=await fetch(API+"/tiktok/events?since="+lastId),data=await response.json();
+    for(const item of data.comments||[]){
+      lastId=Math.max(lastId,item.id);
+      if(seenIds.has(item.id))continue;
+      seenIds.add(item.id);
+      const message=item.message||"";
+      addLiveComment(item.username,message);
+      if(automatic&&message.trim()){queue.push(item);processQueue();}
     }
+  }catch(error){console.log("Erro ao buscar eventos:",error);}
 }
-
 async function processQueue(){
-
-    if(speaking || !automatic || queue.length===0)return;
-
-    speaking=true;
-
-    try{
-
-        while(queue.length>0 && automatic){
-
-            const item=queue.shift();
-
-            document.getElementById("autoStatus").textContent=
-                "🤖 Nico está respondendo "+item.username;
-
-            try{
-
-                const reply=await getAIReply(
-                    item.username,
-                    item.message
-                );
-
-                addMessage("Nico",reply);
-
-                await speak(reply);
-
-                await new Promise(resolve=>
-                    setTimeout(resolve,700)
-                );
-
-            }catch(error){
-
-                addMessage("Sistema",error.message);
-
-                document.getElementById("autoStatus").textContent=
-                    "Erro ao responder. Verifique o painel.";
-
-            }
-        }
-
-    }finally{
-
-        speaking=false;
-
-        if(automatic && queue.length>0){
-
-            processQueue();
-
-        }else{
-
-            document.getElementById("autoStatus").textContent=
-                automatic ?
-                "🟢 Respostas automáticas ligadas" :
-                "Respostas automáticas desligadas";
-
-        }
+  if(processingQueue||!automatic||queue.length===0)return;
+  processingQueue=true;
+  try{
+    while(queue.length>0&&automatic){
+      const item=queue.shift();
+      document.getElementById("autoStatus").textContent="🤖 Nico está respondendo "+item.username;
+      try{
+        const reply=await getAIReply(item.username,item.message);
+        addMessage("Nico",reply);await speak(reply);
+        await new Promise(resolve=>setTimeout(resolve,700));
+      }catch(error){addMessage("Sistema",error.message);document.getElementById("autoStatus").textContent="Erro ao responder. Verifique o painel.";}
     }
+  }finally{
+    processingQueue=false;
+    document.getElementById("autoStatus").textContent=automatic?"🟢 Respostas automáticas ligadas":"Respostas automáticas desligadas";
+    if(automatic&&queue.length>0)processQueue();
+  }
 }
-
 function enableAuto(){
-
-    automatic=!automatic;
-
-    document.getElementById("autoBtn").textContent=
-        automatic ?
-        "DESATIVAR RESPOSTAS AUTOMÁTICAS" :
-        "ATIVAR RESPOSTAS AUTOMÁTICAS";
-
-    document.getElementById("autoStatus").textContent=
-        automatic ?
-        "🟢 Respostas automáticas ligadas" :
-        "Respostas automáticas desligadas";
-
-    if(automatic){
-
-        processQueue();
-
-    }else{
-
-        queue=[];
-
-    }
+  automatic=!automatic;
+  document.getElementById("autoBtn").textContent=automatic?"DESATIVAR RESPOSTAS AUTOMÁTICAS":"ATIVAR RESPOSTAS AUTOMÁTICAS";
+  document.getElementById("autoStatus").textContent=automatic?"🟢 Respostas automáticas ligadas":"Respostas automáticas desligadas";
+  if(automatic)processQueue();else queue=[];
 }
-
 function startPolling(){
-
-    if(polling)return;
-
-    polling=true;
-
-    getComments();
-
-    setInterval(async()=>{
-
-        await checkStatus();
-        await getComments();
-
-    },3000);
+  if(polling)return;
+  polling=true;getComments();
+  setInterval(async()=>{await checkStatus();await getComments();},3000);
 }
-
 checkStatus();
 </script>
-
 </body>
 </html>
