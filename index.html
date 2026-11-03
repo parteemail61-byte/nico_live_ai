@@ -17,9 +17,15 @@ body{
     padding:18px;
 }
 
-.container{max-width:500px;margin:auto}
+.container{
+    max-width:500px;
+    margin:auto;
+}
 
-h1{text-align:center;color:#a78bfa}
+h1{
+    text-align:center;
+    color:#a78bfa;
+}
 
 .card{
     background:#1d1d2b;
@@ -29,22 +35,23 @@ h1{text-align:center;color:#a78bfa}
 }
 
 .avatar-wrap{
-    width:160px;
-    height:160px;
+    width:100%;
+    height:420px;
     margin:15px auto;
     display:flex;
     align-items:center;
     justify-content:center;
-    border-radius:50%;
-    background:#29213e;
+    border-radius:16px;
+    background:#101018;
+    overflow:hidden;
     transition:box-shadow .3s;
 }
 
 .avatar{
-    width:145px;
-    height:145px;
-    object-fit:cover;
-    border-radius:50%;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    border-radius:12px;
     display:block;
     transition:transform .25s ease;
 }
@@ -59,16 +66,19 @@ h1{text-align:center;color:#a78bfa}
 
 @keyframes talk{
     0%{transform:translateY(0) scale(1)}
-    50%{transform:translateY(-4px) scale(1.025)}
+    50%{transform:translateY(-3px) scale(1.015)}
     100%{transform:translateY(0) scale(1)}
 }
 
 @keyframes glow{
     from{box-shadow:0 0 8px #8056e8}
-    to{box-shadow:0 0 28px #a78bfa}
+    to{box-shadow:0 0 25px #a78bfa}
 }
 
-h2{font-size:19px;margin-top:0}
+h2{
+    font-size:19px;
+    margin-top:0;
+}
 
 button{
     width:100%;
@@ -82,8 +92,13 @@ button{
     margin-top:9px;
 }
 
-button.secondary{background:#39394b}
-button:disabled{opacity:.5}
+button.secondary{
+    background:#39394b;
+}
+
+button:disabled{
+    opacity:.5;
+}
 
 input{
     width:100%;
@@ -122,6 +137,12 @@ input{
     color:#aaa;
     text-align:center;
 }
+
+@media(max-width:400px){
+    .avatar-wrap{
+        height:380px;
+    }
+}
 </style>
 </head>
 
@@ -131,19 +152,24 @@ input{
 <h1>🎙️ NICO LIVE AI</h1>
 
 <div class="card">
+
     <div class="avatar-wrap" id="avatarWrap">
         <img class="avatar" src="/avatar" alt="Nico">
     </div>
 
     <h2 style="text-align:center">Seu parceiro de LIVE</h2>
+
     <p class="status">Voz masculina: Antonio Neural</p>
 
     <button onclick="testVoice()">🔊 TESTAR VOZ</button>
     <button class="secondary" onclick="stopVoice()">PARAR VOZ</button>
+
 </div>
 
 <div class="card">
+
     <h2>📱 Conexão TikTok LIVE</h2>
+
     <p class="status" id="liveStatus">Verificando conexão...</p>
 
     <button onclick="connectTikTok()" id="connectBtn">
@@ -155,10 +181,13 @@ input{
     </button>
 
     <p class="small">Conta: @nicotriste53</p>
+
 </div>
 
 <div class="card">
+
     <h2>🤖 Resposta automática</h2>
+
     <p class="status" id="autoStatus">
         Respostas automáticas desligadas
     </p>
@@ -170,22 +199,31 @@ input{
     <p class="small">
         O Nico responderá aos comentários e presentes recebidos na LIVE.
     </p>
+
 </div>
 
 <div class="card">
+
     <h2>💬 Comentários e presentes</h2>
-    <div id="liveComments">Aguardando mensagens...</div>
+
+    <div id="liveComments">
+        Aguardando mensagens...
+    </div>
+
 </div>
 
 <div class="card">
+
     <h2>💬 Conversar com Nico</h2>
 
     <input id="username" placeholder="Nome da pessoa" value="visitante">
+
     <input id="message" placeholder="Digite uma mensagem">
 
     <button onclick="sendMessage()">ENVIAR MENSAGEM</button>
 
     <div id="messages"></div>
+
 </div>
 
 <audio id="audio" controls style="width:100%;margin-top:10px"></audio>
@@ -217,8 +255,10 @@ audio.addEventListener("pause", () => setSpeaking(false));
 function addMessage(who, text) {
     const box = document.getElementById("messages");
     const div = document.createElement("div");
+
     div.className = "msg";
     div.textContent = who + ": " + text;
+
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
@@ -226,8 +266,10 @@ function addMessage(who, text) {
 function addLiveComment(who, message) {
     const box = document.getElementById("liveComments");
     const div = document.createElement("div");
+
     div.className = "msg";
     div.textContent = who + ": " + message;
+
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
@@ -245,7 +287,9 @@ async function speak(text) {
 
     const blob = await response.blob();
 
-    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+    }
 
     audioUrl = URL.createObjectURL(blob);
     audio.src = audioUrl;
@@ -302,12 +346,16 @@ async function sendMessage() {
     if (!message) return;
 
     addMessage(username, message);
+
     document.getElementById("message").value = "";
 
     try {
         const reply = await getAIReply(username, message);
+
         addMessage("Nico", reply);
+
         await speak(reply);
+
     } catch(error) {
         addMessage("Sistema", error.message);
     }
@@ -315,6 +363,7 @@ async function sendMessage() {
 
 async function connectTikTok() {
     const button = document.getElementById("connectBtn");
+
     button.disabled = true;
 
     document.getElementById("liveStatus").textContent =
@@ -335,6 +384,7 @@ async function connectTikTok() {
             data.message || data.status;
 
         startPolling();
+
         setTimeout(checkStatus, 2000);
 
     } catch(error) {
@@ -348,6 +398,7 @@ async function connectTikTok() {
 async function checkStatus() {
     try {
         const response = await fetch(API + "/tiktok/status");
+
         const data = await response.json();
 
         document.getElementById("liveStatus").textContent =
@@ -360,6 +411,7 @@ async function checkStatus() {
                 "CONECTADO";
 
             document.getElementById("connectBtn").disabled = true;
+
         } else {
             document.getElementById("connectBtn").disabled = false;
         }
@@ -379,9 +431,11 @@ async function getComments() {
         const data = await response.json();
 
         for (const item of data.comments || []) {
+
             lastId = Math.max(lastId, item.id);
 
             if (seenIds.has(item.id)) continue;
+
             seenIds.add(item.id);
 
             const message = item.message || "";
@@ -406,6 +460,7 @@ async function processQueue() {
 
     try {
         while (queue.length > 0 && automatic) {
+
             const item = queue.shift();
 
             document.getElementById("autoStatus").textContent =
@@ -418,6 +473,7 @@ async function processQueue() {
                 );
 
                 addMessage("Nico", reply);
+
                 await speak(reply);
 
                 await new Promise(resolve =>
@@ -425,6 +481,7 @@ async function processQueue() {
                 );
 
             } catch(error) {
+
                 addMessage("Sistema", error.message);
 
                 document.getElementById("autoStatus").textContent =
@@ -433,11 +490,14 @@ async function processQueue() {
         }
 
     } finally {
+
         speaking = false;
 
         if (automatic && queue.length > 0) {
             processQueue();
+
         } else {
+
             document.getElementById("autoStatus").textContent =
                 automatic ?
                 "🟢 Respostas automáticas ligadas" :
@@ -470,6 +530,7 @@ function startPolling() {
     if (polling) return;
 
     polling = true;
+
     getComments();
 
     setInterval(async () => {
