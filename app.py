@@ -1,41 +1,30 @@
 
 import os
 import requests
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
 from groq import Groq
 
 app = Flask(__name__)
 CORS(app)
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+VOICE_ID = "CstacWqMhJQlnfLPxRG4"
 
-VOICE_ID = "U5UjeJMsOvyhYhXfZdvZ"
+groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
-PERSONALIDADE = """
-Você é Nico, um personagem virtual que participa de lives.
-Fale sempre em português brasileiro.
-Sua personalidade é jovem, divertida, carismática e espontânea.
-Converse como alguém de verdade.
-Chame as pessoas pelo nome quando disponível.
-Responda de forma curta, natural e animada.
-Use emojis com moderação.
-Nunca diga que é o Clecinho. Seu nome é Nico.
-"""
 
 @app.route("/")
 def home():
-    return send_from_directory(app.root_path, "index.html")
+    return send_file("index.html")
+
 
 @app.route("/watermarked_img_9725052891330264212.jpg")
-def nico_image():
-    return send_from_directory(
-        app.root_path,
-        "watermarked_img_9725052891330264212.jpg"
-    )
+def avatar():
+    return send_file("watermarked_img_9725052891330264212.jpg")
+
 
 @app.route("/health")
 def health():
@@ -43,74 +32,70 @@ def health():
         "status": "ok",
         "project": "Nico LIVE AI",
         "ai_configured": bool(GROQ_API_KEY),
-        "voice_configured": bool(ELEVENLABS_API_KEY)
+        "voice_configured": bool(ELEVENLABS_API_KEY),
+        "voice": VOICE_ID
     })
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    data = request.get_json(silent=True) or {}
-
-    message = str(data.get("message", "")).strip()
-    name = str(data.get("name", "")).strip()
-
-    if not message:
-        return jsonify({"error": "Mensagem vazia"}), 400
-
-    if len(message) > 1000:
-        return jsonify({"error": "Mensagem muito longa"}), 400
-
-    if not client:
-        return jsonify({"error": "Chave Groq não configurada"}), 500
-
     try:
-        contexto = (
-            f"Nome do espectador: {name}\nMensagem: {message}"
-            if name else message
-        )
+        data = request.get_json(silent=True) or {}
+        message = data.get("message", "").strip()
 
-        completion = client.chat.completions.create(
+        if not message:
+            return jsonify({"error": "Mensagem vazia"}), 400
+
+        if not groq_client:
+            return jsonify({"error": "IA não configurada"}), 500
+
+        result = groq_client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=[
-                {"role": "system", "content": PERSONALIDADE},
-                {"role": "user", "content": contexto}
+                {
+                    "role": "system",
+                    "content": (
+                        "Seu nome é Nico. Você é um rapaz jovem, "
+                        "simpático, divertido e espontâneo. "
+                        "Conversa em português brasileiro natural. "
+                        "Responde de forma curta, como numa LIVE. "
+                        "Interage com as pessoas e chama cada uma pelo nome "
+                        "quando ele estiver disponível."
+                    )
+                },
+                {"role": "user", "content": message}
             ],
-            temperature=0.7,
-            max_completion_tokens=300
+            temperature=0.8,
+            max_tokens=180
         )
 
-        reply = completion.choices[0].message.content.strip()
-
-        return jsonify({
-            "received": True,
-            "reply": reply
-        })
+        reply = result.choices[0].message.content.strip()
+        return jsonify({"reply": reply})
 
     except Exception as e:
-        print("ERRO GROQ:", repr(e))
-        return jsonify({"error": "Erro ao gerar resposta da IA"}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/speak", methods=["POST"])
 def speak():
-    data = request.get_json(silent=True) or {}
-    text = str(data.get("text", "")).strip()
-
-    if not text:
-        return jsonify({"error": "Texto vazio"}), 400
-
-    if len(text) > 1200:
-        return jsonify({"error": "Texto muito longo"}), 400
-
-    if not ELEVENLABS_API_KEY:
-        return jsonify({"error": "Chave ElevenLabs não configurada"}), 500
-
     try:
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}?output_format=mp3_44100_128"
+        data = request.get_json(silent=True) or {}
+        text = data.get("text", "").strip()
+
+        if not text:
+            return jsonify({"error": "Texto vazio"}), 400
+
+        if not ELEVENLABS_API_KEY:
+            return jsonify({"error": "Chave do ElevenLabs não configurada"}), 500
+
+        url = (
+            f"https://api.elevenlabs.io/v1/text-to-speech/"
+            f"{VOICE_ID}?output_format=mp3_44100_128"
+        )
 
         headers = {
             "xi-api-key": ELEVENLABS_API_KEY,
-            "Content-Type": "application/json",
-            "Accept": "audio/mpeg"
+            "Content-Type": "application/json"
         }
 
         payload = {
@@ -126,16 +111,16 @@ def speak():
 
         result = requests.post(
             url,
-            headers=headers,
             json=payload,
+            headers=headers,
             timeout=60
         )
 
         if result.status_code != 200:
-            print("ERRO ELEVENLABS:", result.status_code, result.text)
             return jsonify({
-                "error": "Não foi possível gerar a voz"
-            }), 502
+                "error": "Erro no ElevenLabs",
+                "details": result.text
+            }), result.status_code
 
         return Response(
             result.content,
@@ -143,9 +128,8 @@ def speak():
         )
 
     except Exception as e:
-        print("ERRO VOZ:", repr(e))
-        return jsonify({"error": "Erro ao gerar áudio"}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=5000)
