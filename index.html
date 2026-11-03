@@ -22,10 +22,7 @@ body{
     margin:auto;
 }
 
-h1{
-    text-align:center;
-    color:#a78bfa;
-}
+h1{text-align:center;color:#a78bfa}
 
 .card{
     background:#1d1d2b;
@@ -34,14 +31,21 @@ h1{
     margin:15px 0;
 }
 
+.nico-stage{
+    position:relative;
+    width:100%;
+    background:#101018;
+    border-radius:16px;
+    overflow:hidden;
+}
+
 .avatar-wrap{
     width:100%;
     height:420px;
-    margin:15px auto;
+    margin:0 auto;
     display:flex;
     align-items:center;
     justify-content:center;
-    border-radius:16px;
     background:#101018;
     overflow:hidden;
     transition:box-shadow .3s;
@@ -51,7 +55,6 @@ h1{
     width:100%;
     height:100%;
     object-fit:contain;
-    border-radius:12px;
     display:block;
     transition:transform .25s ease;
 }
@@ -61,7 +64,7 @@ h1{
 }
 
 .avatar-wrap.speaking .avatar{
-    animation:talk 0.7s infinite ease-in-out;
+    animation:talk .7s infinite ease-in-out;
 }
 
 @keyframes talk{
@@ -75,10 +78,72 @@ h1{
     to{box-shadow:0 0 25px #a78bfa}
 }
 
-h2{
-    font-size:19px;
-    margin-top:0;
+.fullscreen-btn{
+    position:absolute;
+    right:12px;
+    bottom:12px;
+    width:auto;
+    margin:0;
+    padding:12px 16px;
+    background:#8056e8;
+    z-index:5;
 }
+
+.nico-stage:fullscreen{
+    width:100%;
+    height:100%;
+    height:100dvh;
+    background:#08080d;
+    border-radius:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.nico-stage:fullscreen .avatar-wrap{
+    width:100%;
+    height:100%;
+    height:100dvh;
+}
+
+.nico-stage:fullscreen .avatar{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.nico-stage:fullscreen .fullscreen-btn{
+    position:fixed;
+    right:15px;
+    bottom:20px;
+}
+
+.nico-stage.fake-fullscreen{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    z-index:99999;
+    border-radius:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.nico-stage.fake-fullscreen .avatar-wrap{
+    width:100%;
+    height:100%;
+    height:100dvh;
+}
+
+.nico-stage.fake-fullscreen .fullscreen-btn{
+    position:fixed;
+    right:15px;
+    bottom:20px;
+}
+
+h2{font-size:19px;margin-top:0}
 
 button{
     width:100%;
@@ -92,13 +157,8 @@ button{
     margin-top:9px;
 }
 
-button.secondary{
-    background:#39394b;
-}
-
-button:disabled{
-    opacity:.5;
-}
+button.secondary{background:#39394b}
+button:disabled{opacity:.5}
 
 input{
     width:100%;
@@ -137,12 +197,6 @@ input{
     color:#aaa;
     text-align:center;
 }
-
-@media(max-width:400px){
-    .avatar-wrap{
-        height:380px;
-    }
-}
 </style>
 </head>
 
@@ -153,12 +207,21 @@ input{
 
 <div class="card">
 
-    <div class="avatar-wrap" id="avatarWrap">
-        <img class="avatar" src="/avatar" alt="Nico">
+    <div class="nico-stage" id="nicoStage">
+
+        <div class="avatar-wrap" id="avatarWrap">
+            <img class="avatar" src="/avatar" alt="Nico">
+        </div>
+
+        <button class="fullscreen-btn"
+                id="fullscreenBtn"
+                onclick="toggleFullscreen()">
+            ⛶ TELA CHEIA
+        </button>
+
     </div>
 
     <h2 style="text-align:center">Seu parceiro de LIVE</h2>
-
     <p class="status">Voz masculina: Antonio Neural</p>
 
     <button onclick="testVoice()">🔊 TESTAR VOZ</button>
@@ -206,9 +269,7 @@ input{
 
     <h2>💬 Comentários e presentes</h2>
 
-    <div id="liveComments">
-        Aguardando mensagens...
-    </div>
+    <div id="liveComments">Aguardando mensagens...</div>
 
 </div>
 
@@ -243,6 +304,8 @@ let seenIds = new Set();
 
 const audio = document.getElementById("audio");
 const avatarWrap = document.getElementById("avatarWrap");
+const nicoStage = document.getElementById("nicoStage");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 function setSpeaking(active){
     avatarWrap.classList.toggle("speaking", active);
@@ -252,291 +315,379 @@ audio.addEventListener("play", () => setSpeaking(true));
 audio.addEventListener("ended", () => setSpeaking(false));
 audio.addEventListener("pause", () => setSpeaking(false));
 
-function addMessage(who, text) {
-    const box = document.getElementById("messages");
-    const div = document.createElement("div");
+async function toggleFullscreen(){
 
-    div.className = "msg";
-    div.textContent = who + ": " + text;
+    try{
 
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
+        if(document.fullscreenElement === nicoStage){
+
+            await document.exitFullscreen();
+
+        }else if(nicoStage.classList.contains("fake-fullscreen")){
+
+            nicoStage.classList.remove("fake-fullscreen");
+
+        }else if(nicoStage.requestFullscreen){
+
+            await nicoStage.requestFullscreen();
+
+        }else{
+
+            nicoStage.classList.add("fake-fullscreen");
+
+        }
+
+    }catch(error){
+
+        nicoStage.classList.add("fake-fullscreen");
+
+    }
+
+    updateFullscreenButton();
 }
 
-function addLiveComment(who, message) {
-    const box = document.getElementById("liveComments");
-    const div = document.createElement("div");
+function updateFullscreenButton(){
 
-    div.className = "msg";
-    div.textContent = who + ": " + message;
+    const active =
+        document.fullscreenElement === nicoStage ||
+        nicoStage.classList.contains("fake-fullscreen");
 
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
+    fullscreenBtn.textContent =
+        active ? "✕ SAIR DA TELA CHEIA" : "⛶ TELA CHEIA";
 }
 
-async function speak(text) {
-    const response = await fetch(API + "/speak", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({text})
+document.addEventListener("fullscreenchange", updateFullscreenButton);
+
+function addMessage(who,text){
+
+    const box=document.getElementById("messages");
+    const div=document.createElement("div");
+
+    div.className="msg";
+    div.textContent=who+": "+text;
+
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+}
+
+function addLiveComment(who,message){
+
+    const box=document.getElementById("liveComments");
+    const div=document.createElement("div");
+
+    div.className="msg";
+    div.textContent=who+": "+message;
+
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+}
+
+async function speak(text){
+
+    const response=await fetch(API+"/speak",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({text})
     });
 
-    if (!response.ok) {
+    if(!response.ok){
         throw new Error("Erro ao gerar a voz do Nico.");
     }
 
-    const blob = await response.blob();
+    const blob=await response.blob();
 
-    if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-    }
+    if(audioUrl) URL.revokeObjectURL(audioUrl);
 
-    audioUrl = URL.createObjectURL(blob);
-    audio.src = audioUrl;
+    audioUrl=URL.createObjectURL(blob);
+    audio.src=audioUrl;
 
     await audio.play();
 
-    await new Promise((resolve, reject) => {
-        audio.onended = resolve;
-        audio.onerror = () => reject(
+    await new Promise((resolve,reject)=>{
+
+        audio.onended=resolve;
+        audio.onerror=()=>reject(
             new Error("Erro ao reproduzir áudio.")
         );
+
     });
 }
 
-async function testVoice() {
-    try {
+async function testVoice(){
+
+    try{
+
         await speak(
             "Olá! Eu sou o Nico. Um abraço para todo mundo que está acompanhando a nossa live!"
         );
-    } catch(error) {
-        addMessage("Sistema", error.message);
+
+    }catch(error){
+
+        addMessage("Sistema",error.message);
+
     }
 }
 
-function stopVoice() {
+function stopVoice(){
+
     audio.pause();
-    audio.currentTime = 0;
+    audio.currentTime=0;
     setSpeaking(false);
+
 }
 
-async function getAIReply(username, message) {
-    const response = await fetch(API + "/chat", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({username, message})
+async function getAIReply(username,message){
+
+    const response=await fetch(API+"/chat",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username,message})
     });
 
-    const data = await response.json();
+    const data=await response.json();
 
-    if (!response.ok) {
+    if(!response.ok){
         throw new Error(data.error || "Erro na inteligência artificial.");
     }
 
     return data.reply;
 }
 
-async function sendMessage() {
-    const username =
+async function sendMessage(){
+
+    const username=
         document.getElementById("username").value.trim() || "visitante";
 
-    const message =
+    const message=
         document.getElementById("message").value.trim();
 
-    if (!message) return;
+    if(!message)return;
 
-    addMessage(username, message);
+    addMessage(username,message);
 
-    document.getElementById("message").value = "";
+    document.getElementById("message").value="";
 
-    try {
-        const reply = await getAIReply(username, message);
+    try{
 
-        addMessage("Nico", reply);
+        const reply=await getAIReply(username,message);
+
+        addMessage("Nico",reply);
 
         await speak(reply);
 
-    } catch(error) {
-        addMessage("Sistema", error.message);
+    }catch(error){
+
+        addMessage("Sistema",error.message);
+
     }
 }
 
-async function connectTikTok() {
-    const button = document.getElementById("connectBtn");
+async function connectTikTok(){
 
-    button.disabled = true;
+    const button=document.getElementById("connectBtn");
 
-    document.getElementById("liveStatus").textContent =
+    button.disabled=true;
+
+    document.getElementById("liveStatus").textContent=
         "Tentando conectar...";
 
-    try {
-        const response = await fetch(API + "/tiktok/start", {
-            method: "POST"
+    try{
+
+        const response=await fetch(API+"/tiktok/start",{
+            method:"POST"
         });
 
-        const data = await response.json();
+        const data=await response.json();
 
-        if (!response.ok) {
+        if(!response.ok){
             throw new Error(data.error || "Falha na conexão");
         }
 
-        document.getElementById("liveStatus").textContent =
+        document.getElementById("liveStatus").textContent=
             data.message || data.status;
 
         startPolling();
 
-        setTimeout(checkStatus, 2000);
+        setTimeout(checkStatus,2000);
 
-    } catch(error) {
-        document.getElementById("liveStatus").textContent =
+    }catch(error){
+
+        document.getElementById("liveStatus").textContent=
             error.message;
 
-        button.disabled = false;
+        button.disabled=false;
+
     }
 }
 
-async function checkStatus() {
-    try {
-        const response = await fetch(API + "/tiktok/status");
+async function checkStatus(){
 
-        const data = await response.json();
+    try{
 
-        document.getElementById("liveStatus").textContent =
+        const response=await fetch(API+"/tiktok/status");
+        const data=await response.json();
+
+        document.getElementById("liveStatus").textContent=
             data.connected ? "🟢 Conectado à LIVE!" :
-            data.status === "erro" ? "🔴 Erro: " + data.error :
-            "🟡 " + data.status;
+            data.status==="erro" ? "🔴 Erro: "+data.error :
+            "🟡 "+data.status;
 
-        if (data.connected) {
-            document.getElementById("connectBtn").textContent =
+        if(data.connected){
+
+            document.getElementById("connectBtn").textContent=
                 "CONECTADO";
 
-            document.getElementById("connectBtn").disabled = true;
+            document.getElementById("connectBtn").disabled=true;
 
-        } else {
-            document.getElementById("connectBtn").disabled = false;
+        }else{
+
+            document.getElementById("connectBtn").disabled=false;
+
         }
 
-    } catch(error) {
-        document.getElementById("liveStatus").textContent =
+    }catch(error){
+
+        document.getElementById("liveStatus").textContent=
             "Não foi possível consultar o servidor";
+
     }
 }
 
-async function getComments() {
-    try {
-        const response = await fetch(
-            API + "/tiktok/events?since=" + lastId
+async function getComments(){
+
+    try{
+
+        const response=await fetch(
+            API+"/tiktok/events?since="+lastId
         );
 
-        const data = await response.json();
+        const data=await response.json();
 
-        for (const item of data.comments || []) {
+        for(const item of data.comments || []){
 
-            lastId = Math.max(lastId, item.id);
+            lastId=Math.max(lastId,item.id);
 
-            if (seenIds.has(item.id)) continue;
+            if(seenIds.has(item.id))continue;
 
             seenIds.add(item.id);
 
-            const message = item.message || "";
+            const message=item.message || "";
 
-            addLiveComment(item.username, message);
+            addLiveComment(item.username,message);
 
-            if (automatic && message.trim()) {
+            if(automatic && message.trim()){
+
                 queue.push(item);
                 processQueue();
+
             }
         }
 
-    } catch(error) {
-        console.log("Erro ao buscar eventos:", error);
+    }catch(error){
+
+        console.log("Erro ao buscar eventos:",error);
+
     }
 }
 
-async function processQueue() {
-    if (speaking || !automatic || queue.length === 0) return;
+async function processQueue(){
 
-    speaking = true;
+    if(speaking || !automatic || queue.length===0)return;
 
-    try {
-        while (queue.length > 0 && automatic) {
+    speaking=true;
 
-            const item = queue.shift();
+    try{
 
-            document.getElementById("autoStatus").textContent =
-                "🤖 Nico está respondendo " + item.username;
+        while(queue.length>0 && automatic){
 
-            try {
-                const reply = await getAIReply(
+            const item=queue.shift();
+
+            document.getElementById("autoStatus").textContent=
+                "🤖 Nico está respondendo "+item.username;
+
+            try{
+
+                const reply=await getAIReply(
                     item.username,
                     item.message
                 );
 
-                addMessage("Nico", reply);
+                addMessage("Nico",reply);
 
                 await speak(reply);
 
-                await new Promise(resolve =>
-                    setTimeout(resolve, 700)
+                await new Promise(resolve=>
+                    setTimeout(resolve,700)
                 );
 
-            } catch(error) {
+            }catch(error){
 
-                addMessage("Sistema", error.message);
+                addMessage("Sistema",error.message);
 
-                document.getElementById("autoStatus").textContent =
+                document.getElementById("autoStatus").textContent=
                     "Erro ao responder. Verifique o painel.";
+
             }
         }
 
-    } finally {
+    }finally{
 
-        speaking = false;
+        speaking=false;
 
-        if (automatic && queue.length > 0) {
+        if(automatic && queue.length>0){
+
             processQueue();
 
-        } else {
+        }else{
 
-            document.getElementById("autoStatus").textContent =
+            document.getElementById("autoStatus").textContent=
                 automatic ?
                 "🟢 Respostas automáticas ligadas" :
                 "Respostas automáticas desligadas";
+
         }
     }
 }
 
-function enableAuto() {
-    automatic = !automatic;
+function enableAuto(){
 
-    document.getElementById("autoBtn").textContent =
+    automatic=!automatic;
+
+    document.getElementById("autoBtn").textContent=
         automatic ?
         "DESATIVAR RESPOSTAS AUTOMÁTICAS" :
         "ATIVAR RESPOSTAS AUTOMÁTICAS";
 
-    document.getElementById("autoStatus").textContent =
+    document.getElementById("autoStatus").textContent=
         automatic ?
         "🟢 Respostas automáticas ligadas" :
         "Respostas automáticas desligadas";
 
-    if (automatic) {
+    if(automatic){
+
         processQueue();
-    } else {
-        queue = [];
+
+    }else{
+
+        queue=[];
+
     }
 }
 
-function startPolling() {
-    if (polling) return;
+function startPolling(){
 
-    polling = true;
+    if(polling)return;
+
+    polling=true;
 
     getComments();
 
-    setInterval(async () => {
+    setInterval(async()=>{
+
         await checkStatus();
         await getComments();
-    }, 3000);
+
+    },3000);
 }
 
 checkStatus();
