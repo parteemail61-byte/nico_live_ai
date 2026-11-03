@@ -12,7 +12,12 @@ from groq import Groq
 import edge_tts
 
 from TikTokLive import TikTokLiveClient
-from TikTokLive.events import CommentEvent, ConnectEvent, DisconnectEvent
+from TikTokLive.events import (
+    CommentEvent,
+    GiftEvent,
+    ConnectEvent,
+    DisconnectEvent
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -31,6 +36,19 @@ live_error = ""
 comments = deque(maxlen=200)
 comment_id = 0
 lock = threading.Lock()
+
+
+def add_live_event(username, message, event_type="comment"):
+    global comment_id
+
+    with lock:
+        comment_id += 1
+        comments.append({
+            "id": comment_id,
+            "username": username,
+            "message": message,
+            "type": event_type
+        })
 
 
 @app.route("/")
@@ -81,6 +99,11 @@ def chat():
                         "Você está numa LIVE e conversa com o público. "
                         "Responda de forma curta, animada e natural. "
                         "Chame a pessoa pelo nome quando disponível. "
+                        "Quando a mensagem indicar que a pessoa enviou "
+                        "um presente, agradeça com carinho, cite o nome "
+                        "do presente e a quantidade quando disponível. "
+                        "Não invente presentes ou valores. "
+                        "Não peça presentes. "
                         "Não diga que é um robô ou assistente virtual."
                     )
                 },
@@ -149,7 +172,7 @@ def speak():
 
 
 def run_tiktok():
-    global live_client, live_status, live_error, comment_id
+    global live_client, live_status, live_error
 
     try:
         live_client = TikTokLiveClient(
@@ -169,15 +192,41 @@ def run_tiktok():
 
         @live_client.on(CommentEvent)
         async def on_comment(event):
-            global comment_id
+            username = event.user.nickname or event.user.unique_id
+            add_live_event(
+                username,
+                event.comment,
+                "comment"
+            )
 
-            with lock:
-                comment_id += 1
-                comments.append({
-                    "id": comment_id,
-                    "username": event.user.nickname,
-                    "message": event.comment
-                })
+        @live_client.on(GiftEvent)
+        async def on_gift(event):
+            gift = event.gift
+
+            if gift is None:
+                return
+
+            # Ignora as etapas intermediárias de presentes em sequência.
+            if getattr(event, "streaking", False):
+                return
+
+            username = (
+                event.user.nickname or event.user.unique_id
+            )
+
+            gift_name = gift.name or "presente"
+            quantity = int(event.repeat_count or 1)
+
+            message = (
+                f"🎁 enviou {quantity}x o presente {gift_name}. "
+                "Agradeça pelo presente!"
+            )
+
+            add_live_event(
+                username,
+                message,
+                "gift"
+            )
 
         live_status = "conectando"
         live_client.run()
@@ -231,14 +280,14 @@ def tiktok_events():
         last_id = 0
 
     with lock:
-        new_comments = [
+        new_events = [
             item for item in comments
             if item["id"] > last_id
         ]
 
     return jsonify({
-        "comments": new_comments,
-        "last_id": new_comments[-1]["id"] if new_comments else last_id
+        "comments": new_events,
+        "last_id": new_events[-1]["id"] if new_events else last_id
     })
 
 
