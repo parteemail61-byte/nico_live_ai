@@ -1,41 +1,289 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#080b18">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#080b18">
 <title>Clecinho LIVE AI — Painel V3</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b18;color:#fff;font-family:Arial,Helvetica,sans-serif;touch-action:manipulation}#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}#stage{position:fixed;inset:0;z-index:1;overflow:hidden;background:linear-gradient(120deg,#07101d66,#150a1d55)}
-#top{position:absolute;top:2.2%;left:50%;transform:translateX(-50%);display:flex;gap:clamp(8px,2vw,24px);width:max-content;max-width:96vw}.counter{min-width:clamp(90px,13vw,155px);padding:clamp(7px,1.2vh,12px) 12px;border:1px solid #ffffff35;border-radius:15px;background:#101827c9;box-shadow:0 8px 30px #0008;text-align:center;backdrop-filter:blur(9px)}.icon{font-size:clamp(19px,2.5vw,29px)}.count{font-size:clamp(24px,3.4vw,39px);font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}.label{font-size:9px;letter-spacing:1.7px;opacity:.8;margin-top:3px}
-#mascotArea{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);width:min(34vw,330px);height:min(60vh,430px);display:flex;align-items:center;justify-content:center;pointer-events:none}.mascot{position:relative;width:clamp(130px,19vw,230px);height:clamp(175px,36vh,310px);filter:drop-shadow(0 18px 24px #0009);animation:bob 3s ease-in-out infinite}.head{position:absolute;top:3%;left:13%;width:74%;height:58%;border-radius:48% 48% 44% 44%;background:linear-gradient(145deg,#ffd39a,#e99b63);border:4px solid #6b3b36;box-shadow:inset -12px -10px 0 #bd704e33}.hair{position:absolute;top:-2%;left:10%;width:80%;height:30%;background:#352126;border-radius:55% 50% 28% 22%;transform:rotate(-4deg)}.eye{position:absolute;top:38%;width:10%;height:13%;border-radius:50%;background:#fff;border:2px solid #57302c}.eye:after{content:'';position:absolute;width:45%;height:55%;left:35%;top:25%;border-radius:50%;background:#271a1c}.eye.l{left:30%}.eye.r{right:30%}.cheek{position:absolute;top:56%;width:13%;height:7%;border-radius:50%;background:#ee8c83aa;filter:blur(4px)}.cheek.l{left:18%}.cheek.r{right:18%}.mouth{position:absolute;left:41%;top:59%;width:18%;height:8%;border-radius:5px 5px 50% 50%;background:#71313a;border:2px solid #8a4544;transform-origin:top;animation:talk 4s infinite}.body{position:absolute;bottom:0;left:23%;width:54%;height:42%;border-radius:35% 35% 15% 15%;background:linear-gradient(130deg,#315a9a,#172b55);border:3px solid #19233d}.body:after{content:'LIVE';position:absolute;top:40%;left:0;width:100%;text-align:center;font-size:clamp(13px,2vw,21px);font-weight:900;letter-spacing:3px;color:#fff}.arm{position:absolute;bottom:16%;width:20%;height:34%;border-radius:30px;background:#f3b47d;border:3px solid #754b42;transform-origin:top}.arm.l{left:8%;transform:rotate(22deg);animation:wave 2.6s ease-in-out infinite}.arm.r{right:8%;transform:rotate(-22deg)}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}@keyframes talk{0%,10%,100%{height:5%}3%,6%{height:17%}13%,18%{height:12%}22%{height:5%}}@keyframes wave{0%,100%{transform:rotate(22deg)}50%{transform:rotate(55deg)}}
-#bubble{position:absolute;left:50%;top:17%;transform:translateX(-50%);max-width:min(62vw,620px);min-width:230px;padding:12px 18px;border:1px solid #ffffff55;border-radius:18px;background:#0b1328e8;box-shadow:0 8px 30px #0008;text-align:center;font-size:clamp(13px,1.6vw,19px);font-weight:700}#bubble:after{content:'';position:absolute;bottom:-9px;left:50%;width:16px;height:16px;background:#0b1328;border-right:1px solid #ffffff55;border-bottom:1px solid #ffffff55;transform:translateX(-50%) rotate(45deg)}
-#leftZone,#rightZone{position:absolute;bottom:8%;width:15%;height:20%;display:flex;align-items:center;justify-content:center;border-radius:22px;background:#ffffff0a;border:1px solid #ffffff20}#leftZone{left:3%}#rightZone{right:3%}.gift{font-size:clamp(35px,6vw,65px);filter:drop-shadow(0 5px 15px #0008)}#settings{position:absolute;right:10px;bottom:9px;background:#050914aa;border:1px solid #ffffff40;color:#fff;border-radius:9px;padding:9px 12px;font-size:11px}#toast{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);padding:9px 16px;border-radius:30px;background:#080b15e8;border:1px solid #ffffff35;font-weight:bold;font-size:13px;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
-#config{position:fixed;inset:0;z-index:5;background:#050916ee;display:flex;align-items:center;justify-content:center;padding:14px}#config[hidden]{display:none}.panel{width:min(620px,96vw);max-height:94vh;overflow:auto;background:linear-gradient(145deg,#17243a,#101522);border:1px solid #7185a5;border-radius:18px;padding:18px;box-shadow:0 18px 70px #000b}h2{margin:0 0 8px;font-size:21px}p{font-size:13px;line-height:1.45;color:#d6deeb}button{border:0;border-radius:10px;padding:11px 14px;margin:5px 4px 0 0;background:linear-gradient(135deg,#ffbb69,#ff7299);color:#21101a;font-weight:900;font-size:12px}button.alt{background:#35435d;color:#fff}input{width:100%;padding:11px;border-radius:9px;border:1px solid #7185a5;background:#080f1e;color:white;margin:4px 0 8px}.status{padding:9px 11px;border-radius:9px;background:#342a19;color:#ffd58a;font-size:12px;margin:8px 0}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.small{font-size:11px;color:#aab8cc}#rotate{display:none;position:fixed;inset:0;z-index:8;background:#070b18;color:#fff;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:20px}@media(orientation:portrait){#rotate{display:flex}}
-</style></head><body><canvas id="bg"></canvas><div id="stage">
-<div id="top"><div class="counter"><div class="icon">🌹</div><div class="count" id="roseCount">0</div><div class="label">ROSAS</div></div><div class="counter"><div class="icon">🎁</div><div class="count" id="giftCount">0</div><div class="label">PRESENTES</div></div><div class="counter"><div class="icon">❤️</div><div class="count" id="likeCount">0</div><div class="label">CURTIDAS</div></div></div>
-<div id="bubble">Oi, pessoal! Cheguei pra animar essa live! 😁</div><div id="mascotArea"><div class="mascot"><div class="head"><div class="hair"></div><div class="eye l"></div><div class="eye r"></div><div class="cheek l"></div><div class="cheek r"></div><div class="mouth"></div></div><div class="arm l"></div><div class="arm r"></div><div class="body"></div></div></div>
-<div id="leftZone" onclick="manual('rose')"><div class="gift">🌹</div></div><div id="rightZone" onclick="manual('gift')"><div class="gift">🎁</div></div><button id="settings" onclick="openConfig()">⚙ AJUSTES</button><div id="toast"></div></div>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b18;color:#fff;font-family:Arial,Helvetica,sans-serif;touch-action:manipulation}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+#stage{position:fixed;inset:0;z-index:1;overflow:hidden;background:linear-gradient(120deg,#07101d66,#150a1d55)}
+#top{position:absolute;top:2.2%;left:50%;transform:translateX(-50%);display:flex;gap:clamp(8px,2vw,24px);width:max-content;max-width:96vw}
+.counter{min-width:clamp(90px,13vw,155px);padding:clamp(7px,1.2vh,12px) 12px;border:1px solid #ffffff35;border-radius:15px;background:#101827c9;box-shadow:0 8px 30px #0008;text-align:center;backdrop-filter:blur(9px)}
+.icon{font-size:clamp(19px,2.5vw,29px)}
+.count{font-size:clamp(24px,3.4vw,39px);font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.label{font-size:9px;letter-spacing:1.7px;opacity:.8;margin-top:3px}
+#mascotArea{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);width:min(34vw,330px);height:min(60vh,430px);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.mascot{position:relative;width:clamp(130px,19vw,230px);height:clamp(175px,36vh,310px);filter:drop-shadow(0 18px 24px #0009);animation:bob 3s ease-in-out infinite}
+.head{position:absolute;top:3%;left:13%;width:74%;height:58%;border-radius:48% 48% 44% 44%;background:linear-gradient(145deg,#ffd39a,#e99b63);border:4px solid #6b3b36;box-shadow:inset -12px -10px 0 #bd704e33}
+.hair{position:absolute;top:-2%;left:10%;width:80%;height:30%;background:#352126;border-radius:55% 50% 28% 22%;transform:rotate(-4deg)}
+.eye{position:absolute;top:38%;width:10%;height:13%;border-radius:50%;background:#fff;border:2px solid #57302c}
+.eye:after{content:'';position:absolute;width:45%;height:55%;left:35%;top:25%;border-radius:50%;background:#271a1c}
+.eye.l{left:30%}.eye.r{right:30%}
+.cheek{position:absolute;top:56%;width:13%;height:7%;border-radius:50%;background:#ee8c83aa;filter:blur(4px)}
+.cheek.l{left:18%}.cheek.r{right:18%}
+.mouth{position:absolute;left:41%;top:59%;width:18%;height:8%;border-radius:5px 5px 50% 50%;background:#71313a;border:2px solid #8a4544;transform-origin:top;animation:talk 4s infinite}
+.body{position:absolute;bottom:0;left:23%;width:54%;height:42%;border-radius:35% 35% 15% 15%;background:linear-gradient(130deg,#315a9a,#172b55);border:3px solid #19233d}
+.body:after{content:'LIVE';position:absolute;top:40%;left:0;width:100%;text-align:center;font-size:clamp(13px,2vw,21px);font-weight:900;letter-spacing:3px;color:#fff}
+.arm{position:absolute;bottom:16%;width:20%;height:34%;border-radius:30px;background:#f3b47d;border:3px solid #754b42;transform-origin:top}
+.arm.l{left:8%;transform:rotate(22deg);animation:wave 2.6s ease-in-out infinite}
+.arm.r{right:8%;transform:rotate(-22deg)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes talk{0%,10%,100%{height:5%}3%,6%{height:17%}13%,18%{height:12%}22%{height:5%}}
+@keyframes wave{0%,100%{transform:rotate(22deg)}50%{transform:rotate(55deg)}}
+#bubble{position:absolute;left:50%;top:17%;transform:translateX(-50%);max-width:min(62vw,620px);min-width:230px;padding:12px 18px;border:1px solid #ffffff55;border-radius:18px;background:#0b1328e8;box-shadow:0 8px 30px #0008;text-align:center;font-size:clamp(13px,1.6vw,19px);font-weight:700}
+#bubble:after{content:'';position:absolute;bottom:-9px;left:50%;width:16px;height:16px;background:#0b1328;border-right:1px solid #ffffff55;border-bottom:1px solid #ffffff55;transform:translateX(-50%) rotate(45deg)}
+#leftZone,#rightZone{position:absolute;bottom:8%;width:15%;height:20%;display:flex;align-items:center;justify-content:center;border-radius:22px;background:#ffffff0a;border:1px solid #ffffff20}
+#leftZone{left:3%}#rightZone{right:3%}
+.gift{font-size:clamp(35px,6vw,65px);filter:drop-shadow(0 5px 15px #0008)}
+#settings{position:absolute;right:10px;bottom:9px;background:#050914aa;border:1px solid #ffffff40;color:#fff;border-radius:9px;padding:9px 12px;font-size:11px}
+#toast{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);padding:9px 16px;border-radius:30px;background:#080b15e8;border:1px solid #ffffff35;font-weight:bold;font-size:13px;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
+#config{position:fixed;inset:0;z-index:5;background:#050916ee;display:flex;align-items:center;justify-content:center;padding:14px}
+#config[hidden]{display:none}
+.panel{width:min(620px,96vw);max-height:94vh;overflow:auto;background:linear-gradient(145deg,#17243a,#101522);border:1px solid #7185a5;border-radius:18px;padding:18px;box-shadow:0 18px 70px #000b}
+h2{margin:0 0 8px;font-size:21px}
+p{font-size:13px;line-height:1.45;color:#d6deeb}
+button{border:0;border-radius:10px;padding:11px 14px;margin:5px 4px 0 0;background:linear-gradient(135deg,#ffbb69,#ff7299);color:#21101a;font-weight:900;font-size:12px}
+button.alt{background:#35435d;color:#fff}
+input{width:100%;padding:11px;border-radius:9px;border:1px solid #7185a5;background:#080f1e;color:white;margin:4px 0 8px}
+.status{padding:9px 11px;border-radius:9px;background:#342a19;color:#ffd58a;font-size:12px;margin:8px 0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.small{font-size:11px;color:#aab8cc}
+#rotate{display:none;position:fixed;inset:0;z-index:8;background:#070b18;color:#fff;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:20px}
+@media(orientation:portrait){#rotate{display:flex}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="stage">
+<div id="top">
+<div class="counter"><div class="icon">🌹</div><div class="count" id="roseCount">0</div><div class="label">ROSAS</div></div>
+<div class="counter"><div class="icon">🎁</div><div class="count" id="giftCount">0</div><div class="label">PRESENTES</div></div>
+<div class="counter"><div class="icon">❤️</div><div class="count" id="likeCount">0</div><div class="label">CURTIDAS</div></div>
+</div>
+<div id="bubble">Oi, pessoal! Cheguei pra animar essa live! 😁</div>
+<div id="mascotArea"><div class="mascot"><div class="head"><div class="hair"></div><div class="eye l"></div><div class="eye r"></div><div class="cheek l"></div><div class="cheek r"></div><div class="mouth"></div></div><div class="arm l"></div><div class="arm r"></div><div class="body"></div></div></div>
+<div id="leftZone" onclick="manual('rose')"><div class="gift">🌹</div></div>
+<div id="rightZone" onclick="manual('gift')"><div class="gift">🎁</div></div>
+<button id="settings" onclick="openConfig()">⚙ AJUSTES</button>
+<div id="toast"></div>
+</div>
 <div id="rotate">↻<br><br>Gire o celular para a horizontal</div>
-<div id="config"><div class="panel"><h2>🤖 Clecinho LIVE AI — Painel V3</h2><p>Conta selecionada: <b>@clecinhoo0ficial</b>. Painel em formato horizontal, com personagem animado, fala por voz do aparelho e contadores sem metas.</p>
-<div class="status" id="connStatus">● Sem conexão com os eventos da LIVE. A fala de teste funciona; a contagem automática precisa de uma ponte de eventos.</div>
-<label class="small">Endereço WebSocket da ponte TikTok (quando tiver)</label><input id="wsUrl" placeholder="wss://seu-servidor-ou-ponte/ws"><button onclick="connectBridge()">CONECTAR EVENTOS</button><button class="alt" onclick="disconnectBridge()">DESCONECTAR</button>
-<div class="row"><div><label class="small">Voz</label><select id="voiceSelect" style="width:100%;padding:10px;background:#080f1e;color:white;border:1px solid #7185a5;border-radius:9px"></select></div><div><label class="small">Velocidade da fala</label><input id="rate" type="number" min="0.7" max="1.3" step="0.1" value="1"></div></div>
-<button onclick="speak('Fala, minha gente! Obrigado por chegar na live. Bora conversar!')">TESTAR VOZ 🔊</button><button class="alt" onclick="toggleSpeech()" id="speechBtn">DESLIGAR FALA</button><br>
-<button onclick="manual('rose')">+1 ROSA 🌹</button><button onclick="manual('gift')">+1 PRESENTE 🎁</button><button onclick="manual('like')">+1 CURTIDA ❤️</button><button class="alt" onclick="resetCounts()">ZERAR CONTADORES</button><button onclick="closeConfig()">COMEÇAR / TELA CHEIA</button>
-<p class="small">Atenção: o @ sozinho não autoriza o painel a ler a LIVE. Para receber comentários, curtidas e presentes automaticamente, é necessário conectar um serviço/servidor compatível que envie os eventos por WebSocket. Este painel já tem o espaço de conexão e a leitura dos eventos, mas não finge estar conectado quando não está.</p></div></div>
+
+<div id="config">
+<div class="panel">
+<h2>🤖 Clecinho LIVE AI — Painel V3</h2>
+<p>Conta selecionada: <b>@clecinhoo0ficial</b>. Painel em formato horizontal, com personagem animado, fala por voz do aparelho e contadores sem metas.</p>
+<div class="status" id="connStatus">● Desconectado do TikTok. Toque em CONECTAR AO TIKTOK para iniciar a leitura da LIVE.</div>
+<label class="small">Usuário do TikTok (sem @)</label>
+<input id="tiktokUser" value="clecinhoo0ficial" placeholder="seu_usuario">
+<button onclick="connectTikTok()">CONECTAR AO TIKTOK</button>
+<button class="alt" onclick="disconnectTikTok()">DESCONECTAR</button>
+<div class="row">
+<div><label class="small">Voz</label><select id="voiceSelect" style="width:100%;padding:10px;background:#080f1e;color:white;border:1px solid #7185a5;border-radius:9px"></select></div>
+<div><label class="small">Velocidade da fala</label><input id="rate" type="number" min="0.7" max="1.3" step="0.1" value="1"></div>
+</div>
+<button onclick="speak('Fala, minha gente! Obrigado por chegar na live. Bora conversar!')">TESTAR VOZ 🔊</button>
+<button class="alt" onclick="toggleSpeech()" id="speechBtn">DESLIGAR FALA</button><br>
+<button onclick="manual('rose')">+1 ROSA 🌹</button>
+<button onclick="manual('gift')">+1 PRESENTE 🎁</button>
+<button onclick="manual('like')">+1 CURTIDA ❤️</button>
+<button class="alt" onclick="resetCounts()">ZERAR CONTADORES</button>
+<button onclick="closeConfig()">COMEÇAR / TELA CHEIA</button>
+<p class="small">A conexão usa o servidor do projeto para ler eventos públicos da LIVE. O perfil precisa estar AO VIVO para os eventos chegarem. A leitura usa uma biblioteca não oficial do TikTok e pode sofrer alterações.</p>
+</div>
+</div>
+
 <script>
-(()=>{const $=id=>document.getElementById(id);let roses=0,gifts=0,likes=0,ws=null,speechOn=true,lastChat=0;let voices=[];
-function render(){$('roseCount').textContent=roses;$('giftCount').textContent=gifts;$('likeCount').textContent=likes}
-function toast(s){$('toast').textContent=s;$('toast').style.opacity=1;clearTimeout(toast.tm);toast.tm=setTimeout(()=>$('toast').style.opacity=0,1500)}
-function sayLine(s){$('bubble').textContent=s}
-function speak(s){sayLine(s);if(!speechOn||!('speechSynthesis'in window))return;try{speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(s);u.lang='pt-BR';u.rate=Math.max(.7,Math.min(1.3,Number($('rate').value)||1));let v=voices.find(x=>x.name===$('voiceSelect').value);if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
-function loadVoices(){if(!('speechSynthesis'in window))return;voices=speechSynthesis.getVoices();let sel=$('voiceSelect');sel.innerHTML='';let pt=voices.filter(v=>v.lang.toLowerCase().startsWith('pt'));(pt.length?pt:voices).forEach(v=>{let o=document.createElement('option');o.value=v.name;o.textContent=v.name+' ('+v.lang+')';sel.appendChild(o)})}
-if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
-function manual(k){if(k==='rose'){roses++;gifts++;speak('Obaaa! Uma rosa chegando! Muito obrigado pelo carinho!')}else if(k==='like'){likes++;speak('Valeu pela curtida! Deixa o coração subir!')}else{gifts++;speak('Muito obrigado pelo presente! Você é demais!')}render()}
-window.manual=manual;window.resetCounts=()=>{roses=gifts=likes=0;render();toast('Contadores zerados')};window.speak=speak;window.openConfig=()=>$('config').hidden=false;window.closeConfig=()=>{$('config').hidden=true;document.documentElement.requestFullscreen?.().catch(()=>{})};window.toggleSpeech=()=>{speechOn=!speechOn;$('speechBtn').textContent=speechOn?'DESLIGAR FALA':'LIGAR FALA';if(!speechOn&&'speechSynthesis'in window)speechSynthesis.cancel()};
-window.disconnectBridge=()=>{if(ws)ws.close();ws=null;$('connStatus').textContent='● Desconectado. A contagem automática está parada.'};window.connectBridge=()=>{let url=$('wsUrl').value.trim();if(!url){toast('Informe o endereço WebSocket da ponte primeiro');return}try{ws=new WebSocket(url);$('connStatus').textContent='◌ Conectando…';ws.onopen=()=>$('connStatus').textContent='● Conectado à ponte de eventos';ws.onerror=()=>$('connStatus').textContent='● Não foi possível conectar. Confira o endereço e a ponte.';ws.onclose=()=>$('connStatus').textContent='● Conexão encerrada';ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return}handleEvent(d)}}catch(e){$('connStatus').textContent='● Endereço inválido'}};
-function handleEvent(d){let type=(d.type||d.event||'').toLowerCase();let user=d.nickname||d.uniqueId||d.username||'amigo';if(type.includes('chat')||type.includes('comment')){let msg=String(d.comment||d.message||'').slice(0,180);if(!msg)return;let now=Date.now();if(now-lastChat<2500)return;lastChat=now;let low=msg.toLowerCase();let answer;if(/oi|olá|ola|boa noite|bom dia|boa tarde/.test(low))answer='Opa, '+user+'! Seja muito bem-vindo!';else if(/nome|quem é você|quem e voce/.test(low))answer='Eu sou o mascote da live! Vim fazer companhia pra vocês!';else if(/música|musica|canta|arrocha/.test(low))answer='Aqui é lugar de arrocha! Manda aquela música que você gosta!';else answer='Tô lendo você, '+user+'! Conta mais aí que eu tô na resenha!';speak(answer)}else if(type.includes('gift')){let name=d.giftName||d.gift_name||d.name||'presente';let amount=Number(d.repeatCount||d.repeat_count||d.count||1);if(/rose|rosa/i.test(name))roses+=amount;gifts+=amount;render();speak('Aí sim, '+user+'! Muito obrigado pelo presente '+name+'!')}else if(type.includes('like')){let n=Number(d.likeCount||d.like_count||d.count||1);likes+=n;render()}}
+(()=>{
+const $=id=>document.getElementById(id);
+let roses=0,gifts=0,likes=0,speechOn=true,lastChat=0,lastId=0,timer=null,connected=false,voices=[];
+const API='https://nico-live-ai-e3t8.onrender.com';
+
+function render(){
+$('roseCount').textContent=roses;
+$('giftCount').textContent=gifts;
+$('likeCount').textContent=likes;
+}
+function toast(s){
+$('toast').textContent=s;
+$('toast').style.opacity=1;
+clearTimeout(toast.tm);
+toast.tm=setTimeout(()=>$('toast').style.opacity=0,1800);
+}
+function speak(s){
+$('bubble').textContent=s;
+if(!speechOn||!('speechSynthesis'in window))return;
+try{
+speechSynthesis.cancel();
+let u=new SpeechSynthesisUtterance(s);
+u.lang='pt-BR';
+u.rate=Math.max(.7,Math.min(1.3,Number($('rate').value)||1));
+let v=voices.find(x=>x.name===$('voiceSelect').value);
+if(v)u.voice=v;
+speechSynthesis.speak(u);
+}catch(e){}
+}
+function loadVoices(){
+if(!('speechSynthesis'in window))return;
+voices=speechSynthesis.getVoices();
+let sel=$('voiceSelect');
+sel.innerHTML='';
+let pt=voices.filter(v=>v.lang.toLowerCase().startsWith('pt'));
+(pt.length?pt:voices).forEach(v=>{
+let o=document.createElement('option');
+o.value=v.name;
+o.textContent=v.name+' ('+v.lang+')';
+sel.appendChild(o);
+});
+}
+if('speechSynthesis'in window){
+loadVoices();
+speechSynthesis.onvoiceschanged=loadVoices;
+}
+function manual(k){
+if(k==='rose'){
+roses++;
+gifts++;
+speak('Obaaa! Uma rosa chegando! Muito obrigado pelo carinho!');
+}else if(k==='like'){
+likes++;
+speak('Valeu pela curtida! Deixa o coração subir!');
+}else{
+gifts++;
+speak('Muito obrigado pelo presente! Você é demais!');
+}
+render();
+}
+window.manual=manual;
+window.resetCounts=()=>{
+roses=gifts=likes=0;
+render();
+toast('Contadores zerados');
+};
+window.speak=speak;
+window.openConfig=()=>$('config').hidden=false;
+window.closeConfig=()=>{
+$('config').hidden=true;
+document.documentElement.requestFullscreen?.().catch(()=>{});
+};
+window.toggleSpeech=()=>{
+speechOn=!speechOn;
+$('speechBtn').textContent=speechOn?'DESLIGAR FALA':'LIGAR FALA';
+if(!speechOn&&'speechSynthesis'in window)speechSynthesis.cancel();
+};
+window.disconnectTikTok=()=>{
+connected=false;
+if(timer)clearInterval(timer);
+timer=null;
+$('connStatus').textContent='● Painel desconectado.';
+};
+window.connectTikTok=async()=>{
+let username=$('tiktokUser').value.trim().replace(/^@/,'');
+if(!username){toast('Digite seu usuário');return;}
+$('connStatus').textContent='◌ Iniciando conexão…';
+try{
+let r=await fetch(API+'/tiktok/start',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({username})
+});
+let d=await r.json();
+if(!r.ok)throw Error(d.error||'Falha ao iniciar');
+lastId=0;
+connected=true;
+$('connStatus').textContent='◌ Solicitado para @'+username+'. Entre ao vivo e aguarde…';
+if(timer)clearInterval(timer);
+poll();
+timer=setInterval(poll,1500);
+status();
+}catch(e){
+$('connStatus').textContent='● '+e.message;
+}
+};
+async function status(){
+try{
+let d=await(await fetch(API+'/tiktok/status')).json();
+if(d.connected)$('connStatus').textContent='● CONECTADO à LIVE @'+d.username;
+else if(d.status==='erro')$('connStatus').textContent='● Erro: '+(d.error||'não foi possível conectar');
+}catch(e){}
+}
+async function poll(){
+if(!connected)return;
+try{
+let d=await(await fetch(API+'/tiktok/events?since='+lastId)).json();
+lastId=d.last_id??lastId;
+(d.comments||[]).forEach(event);
+}catch(e){
+$('connStatus').textContent='● Sem resposta do servidor; tentando novamente…';
+}
+}
+function event(d){
+let type=(d.type||'').toLowerCase();
+let user=d.username||'amigo';
+let msg=String(d.message||'');
+if(type==='gift'){
+let m=msg.match(/enviou\s+(\d+)x\s+o presente\s+(.+?)\./i);
+let n=m?+m[1]:1;
+let name=m?m[2]:'presente';
+gifts+=n;
+if(/rosa|rose/i.test(name))roses+=n;
+render();
+speak('Aí sim, '+user+'! Muito obrigado por enviar '+(n>1?n+' ':'')+name+'! ❤️');
+}else if(type==='comment'){
+if(Date.now()-lastChat<2800)return;
+lastChat=Date.now();
+let l=msg.toLowerCase();
+let ans=/oi|olá|ola|boa noite|bom dia|boa tarde/.test(l)?'Opa, '+user+'! Seja muito bem-vindo!':/música|musica|canta|arrocha/.test(l)?'Aqui é lugar de arrocha! Manda aquela música que você gosta!':'Tô lendo você, '+user+'! Conta mais aí!';
+speak(ans);
+}
+}
 })();
 </script>
-<script>(()=>{const c=document.getElementById('bg'),x=c.getContext('2d');let w,h,d=1,p=[],t=0;function size(){d=Math.min(devicePixelRatio||1,1.5);w=innerWidth;h=innerHeight;c.width=w*d;c.height=h*d;c.style.width=w+'px';c.style.height=h+'px';x.setTransform(d,0,0,d,0,0);p=Array.from({length:Math.max(50,Math.floor(w*h/13000))},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*2+.4,v:Math.random()*.35+.08,a:Math.random()*.5+.1}))}addEventListener('resize',size);size();function frame(){t+=.007;x.clearRect(0,0,w,h);let g=x.createLinearGradient(0,0,w,h);g.addColorStop(0,'#0b1930');g.addColorStop(.5,'#17132b');g.addColorStop(1,'#251128');x.fillStyle=g;x.fillRect(0,0,w,h);p.forEach(q=>{q.y-=q.v;if(q.y<0){q.y=h;q.x=Math.random()*w}x.fillStyle=`rgba(255,220,190,${q.a*(.55+.45*Math.sin(t*2+q.x))})`;x.beginPath();x.arc(q.x+Math.sin(t+q.y)*5,q.y,q.r,0,Math.PI*2);x.fill()});let glow=x.createRadialGradient(w*.5,h*.5,5,w*.5,h*.5,Math.max(w,h)*.55);glow.addColorStop(0,'rgba(255,104,151,.1)');glow.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=glow;x.fillRect(0,0,w,h);requestAnimationFrame(frame)}frame()})();</script>
-</body></html>
+
+<script>
+(()=>{
+const c=document.getElementById('bg');
+const x=c.getContext('2d');
+let w,h,d=1,p=[],t=0;
+function size(){
+d=Math.min(devicePixelRatio||1,1.5);
+w=innerWidth;h=innerHeight;
+c.width=w*d;c.height=h*d;
+c.style.width=w+'px';c.style.height=h+'px';
+x.setTransform(d,0,0,d,0,0);
+p=Array.from({length:Math.max(50,Math.floor(w*h/13000))},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*2+.4,v:Math.random()*.35+.08,a:Math.random()*.5+.1}));
+}
+addEventListener('resize',size);
+size();
+function frame(){
+t+=.007;
+x.clearRect(0,0,w,h);
+let g=x.createLinearGradient(0,0,w,h);
+g.addColorStop(0,'#0b1930');
+g.addColorStop(.5,'#17132b');
+g.addColorStop(1,'#251128');
+x.fillStyle=g;
+x.fillRect(0,0,w,h);
+p.forEach(q=>{
+q.y-=q.v;
+if(q.y<0){q.y=h;q.x=Math.random()*w;}
+x.fillStyle=`rgba(255,220,190,${q.a*(.55+.45*Math.sin(t*2+q.x))})`;
+x.beginPath();
+x.arc(q.x+Math.sin(t+q.y)*5,q.y,q.r,0,Math.PI*2);
+x.fill();
+});
+let glow=x.createRadialGradient(w*.5,h*.5,5,w*.5,h*.5,Math.max(w,h)*.55);
+glow.addColorStop(0,'rgba(255,104,151,.1)');
+glow.addColorStop(1,'rgba(0,0,0,0)');
+x.fillStyle=glow;
+x.fillRect(0,0,w,h);
+requestAnimationFrame(frame);
+}
+frame();
+})();
+</script>
+</body>
+</html>
