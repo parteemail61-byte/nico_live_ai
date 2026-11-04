@@ -1,4 +1,3 @@
-
 import os
 import asyncio
 import tempfile
@@ -12,84 +11,82 @@ from groq import Groq
 import edge_tts
 
 from TikTokLive import TikTokLiveClient
-from TikTokLive.events import (
-    CommentEvent,
-    GiftEvent,
-    ConnectEvent,
-    DisconnectEvent
-)
+from TikTokLive.events import CommentEvent, GiftEvent, ConnectEvent, DisconnectEvent
 
 app = Flask(__name__)
 CORS(app)
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+ai_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
-NICO_VOICE = "pt-BR-AntonioNeural"
-TIKTOK_USERNAME = "nicotriste53"
-
+VOICE = "pt-BR-AntonioNeural"
+TIKTOK_USERNAME = ""
 live_client = None
 live_thread = None
 live_status = "desconectado"
 live_error = ""
 
-comments = deque(maxlen=200)
-comment_id = 0
-lock = threading.Lock()
+live_events = deque(maxlen=300)
+event_id = 0
+events_lock = threading.Lock()
+client_lock = threading.Lock()
 
 
-def add_live_event(username, message, event_type="comment"):
-    global comment_id
-    with lock:
-        comment_id += 1
-        comments.append({
-            "id": comment_id,
-            "username": username,
+def add_live_event(username, message, event_type="comment", extra=None):
+    global event_id
+    with events_lock:
+        event_id += 1
+        item = {
+            "id": event_id,
+            "username": username or "Visitante",
             "message": message,
             "type": event_type
-        })
+        }
+        if extra:
+            item.update(extra)
+        live_events.append(item)
 
 
 @app.route("/")
 def home():
-    return send_file(os.path.join(app.root_path, "index.html"))
+    path = os.path.join(app.root_path, "index.html")
+    if os.path.exists(path):
+        return send_file(path)
+    return jsonify({"project": "Clecinho LIVE AI", "status": "online"})
 
 
 @app.route("/avatar")
 def avatar():
-    return send_file(
-        os.path.join(
-            app.root_path,
-            "watermarked_img_9725052891330264212.jpg"
-        )
-    )
+    path = os.path.join(app.root_path, "watermarked_img_9725052891330264212.jpg")
+    if not os.path.exists(path):
+        return jsonify({"error": "Arquivo de avatar não encontrado."}), 404
+    return send_file(path)
 
 
-# NOVAS ROTAS DOS VIDEOS DO NICO
 @app.route("/scene1")
 def scene1():
-    return send_file(
-        os.path.join(app.root_path, "nico_cena1.mp4"),
-        mimetype="video/mp4"
-    )
+    path = os.path.join(app.root_path, "nico_cena1.mp4")
+    if not os.path.exists(path):
+        return jsonify({"error": "Vídeo da cena 1 não encontrado."}), 404
+    return send_file(path, mimetype="video/mp4")
 
 
 @app.route("/scene2")
 def scene2():
-    return send_file(
-        os.path.join(app.root_path, "nico_cena2.mp4"),
-        mimetype="video/mp4"
-    )
+    path = os.path.join(app.root_path, "nico_cena2.mp4")
+    if not os.path.exists(path):
+        return jsonify({"error": "Vídeo da cena 2 não encontrado."}), 404
+    return send_file(path, mimetype="video/mp4")
 
 
 @app.route("/health")
 def health():
     return jsonify({
         "status": "ok",
-        "project": "Nico LIVE AI",
-        "ai_configured": client is not None,
-        "voice": "Antonio Neural",
-        "voice_configured": True
+        "project": "Clecinho LIVE AI",
+        "ai_configured": ai_client is not None,
+        "voice_configured": True,
+        "tiktok_status": live_status
     })
 
 
@@ -98,47 +95,35 @@ def chat():
     try:
         data = request.get_json(silent=True) or {}
         message = str(data.get("message", "")).strip()
-        username = str(data.get("username", "visitante")).strip()
+        username = str(data.get("username", "visitante")).strip() or "visitante"
 
         if not message:
             return jsonify({"error": "Digite uma mensagem."}), 400
 
-        if client is None:
-            return jsonify({
-                "error": "Chave GROQ_API_KEY não configurada."
-            }), 500
+        if ai_client is None:
+            return jsonify({"error": "Chave GROQ_API_KEY não configurada."}), 500
 
-        result = client.chat.completions.create(
+        result = ai_client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "Seu nome é Nico. Você é um rapaz jovem, "
-                        "divertido, carismático e espontâneo. "
-                        "Fale português brasileiro natural. "
-                        "Você está numa LIVE e conversa com o público. "
-                        "Responda de forma curta, animada e natural. "
+                        "Você é o personagem virtual da LIVE do Clecinho. "
+                        "Fale português brasileiro natural, com carisma e bom humor. "
+                        "Responda de forma curta, espontânea e respeitosa. "
                         "Chame a pessoa pelo nome quando disponível. "
-                        "Quando a mensagem indicar que a pessoa enviou "
-                        "um presente, agradeça com carinho, cite o nome "
-                        "do presente e a quantidade quando disponível. "
-                        "Não invente presentes ou valores. "
-                        "Não peça presentes. "
-                        "Não diga que é um robô ou assistente virtual."
+                        "Se a mensagem mencionar presente, agradeça e cite o presente "
+                        "e a quantidade quando informados. Não invente presentes ou valores."
                     )
                 },
-                {
-                    "role": "user",
-                    "content": f"Mensagem de {username}: {message}"
-                }
+                {"role": "user", "content": f"Mensagem de {username}: {message}"}
             ],
             temperature=0.8,
             max_tokens=180
         )
 
-        reply = result.choices[0].message.content.strip()
-        return jsonify({"reply": reply})
+        return jsonify({"reply": result.choices[0].message.content.strip()})
 
     except Exception as error:
         return jsonify({"error": str(error)}), 500
@@ -158,16 +143,10 @@ def speak():
 
         async def generate_audio():
             communication = edge_tts.Communicate(
-                message,
-                NICO_VOICE,
-                rate="+5%",
-                pitch="-2Hz"
+                message, VOICE, rate="+5%", pitch="-2Hz"
             )
 
-            with tempfile.NamedTemporaryFile(
-                suffix=".mp3",
-                delete=False
-            ) as temp:
+            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp:
                 path = temp.name
 
             try:
@@ -183,42 +162,42 @@ def speak():
         return send_file(
             BytesIO(audio_data),
             mimetype="audio/mpeg",
-            download_name="nico.mp3"
+            download_name="clecinho.mp3"
         )
 
     except Exception as error:
-        return jsonify({
-            "error": "Não consegui gerar a voz: " + str(error)
-        }), 500
+        return jsonify({"error": "Não consegui gerar a voz: " + str(error)}), 500
 
 
-def run_tiktok():
+def run_tiktok(username):
     global live_client, live_status, live_error
 
     try:
-        live_client = TikTokLiveClient(
-            unique_id=TIKTOK_USERNAME
-        )
+        client = TikTokLiveClient(unique_id=username)
+        live_client = client
 
-        @live_client.on(ConnectEvent)
+        @client.on(ConnectEvent)
         async def on_connect(event):
             global live_status, live_error
             live_status = "conectado"
             live_error = ""
 
-        @live_client.on(DisconnectEvent)
+        @client.on(DisconnectEvent)
         async def on_disconnect(event):
             global live_status
             live_status = "desconectado"
 
-        @live_client.on(CommentEvent)
+        @client.on(CommentEvent)
         async def on_comment(event):
-            username = event.user.nickname or event.user.unique_id
-            add_live_event(username, event.comment, "comment")
+            user = (
+                getattr(event.user, "nickname", None)
+                or getattr(event.user, "unique_id", "Visitante")
+            )
+            add_live_event(user, str(event.comment), "comment")
 
-        @live_client.on(GiftEvent)
+        @client.on(GiftEvent)
         async def on_gift(event):
-            gift = event.gift
+            gift = getattr(event, "gift", None)
 
             if gift is None:
                 return
@@ -226,19 +205,31 @@ def run_tiktok():
             if getattr(event, "streaking", False):
                 return
 
-            username = event.user.nickname or event.user.unique_id
-            gift_name = gift.name or "presente"
-            quantity = int(event.repeat_count or 1)
+            user = (
+                getattr(event.user, "nickname", None)
+                or getattr(event.user, "unique_id", "Visitante")
+            )
+
+            gift_name = getattr(gift, "name", None) or "presente"
+            quantity = int(getattr(event, "repeat_count", 1) or 1)
 
             message = (
                 f"🎁 enviou {quantity}x o presente {gift_name}. "
                 "Agradeça pelo presente!"
             )
 
-            add_live_event(username, message, "gift")
+            add_live_event(
+                user,
+                message,
+                "gift",
+                {"gift_name": str(gift_name), "quantity": quantity}
+            )
 
         live_status = "conectando"
-        live_client.run()
+        client.run()
+
+        if live_status == "conectado":
+            live_status = "desconectado"
 
     except Exception as error:
         live_status = "erro"
@@ -247,22 +238,49 @@ def run_tiktok():
 
 @app.route("/tiktok/start", methods=["POST"])
 def tiktok_start():
-    global live_thread, live_status, live_error
+    global live_thread, live_status, live_error, TIKTOK_USERNAME
 
-    if live_thread and live_thread.is_alive():
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username", "")).strip().lstrip("@")
+
+    if not username:
+        username = TIKTOK_USERNAME
+
+    if not username:
         return jsonify({
-            "status": live_status,
-            "message": "A conexão já foi iniciada."
-        })
+            "status": "erro",
+            "error": "Informe o @ do perfil do TikTok."
+        }), 400
 
-    live_error = ""
-    live_status = "iniciando"
+    with client_lock:
+        if live_thread and live_thread.is_alive():
 
-    live_thread = threading.Thread(
-        target=run_tiktok,
-        daemon=True
-    )
-    live_thread.start()
+            if username.lower() != TIKTOK_USERNAME.lower():
+                return jsonify({
+                    "status": live_status,
+                    "error": (
+                        "Já existe uma conexão ativa com outro perfil. "
+                        "Reinicie o serviço para trocar."
+                    )
+                }), 409
+
+            return jsonify({
+                "status": live_status,
+                "username": TIKTOK_USERNAME,
+                "message": "A conexão já foi iniciada."
+            })
+
+        TIKTOK_USERNAME = username
+        live_error = ""
+        live_status = "iniciando"
+
+        live_thread = threading.Thread(
+            target=run_tiktok,
+            args=(username,),
+            daemon=True
+        )
+
+        live_thread.start()
 
     return jsonify({
         "status": "iniciando",
@@ -285,20 +303,24 @@ def tiktok_status():
 def tiktok_events():
     try:
         last_id = int(request.args.get("since", 0))
-    except ValueError:
+    except (TypeError, ValueError):
         last_id = 0
 
-    with lock:
+    with events_lock:
         new_events = [
-            item for item in comments
+            item for item in live_events
             if item["id"] > last_id
         ]
 
     return jsonify({
         "comments": new_events,
+        "events": new_events,
         "last_id": new_events[-1]["id"] if new_events else last_id
     })
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5000"))
+    )
